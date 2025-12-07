@@ -9,6 +9,8 @@ import { initVoice } from './engine/voiceEngine.js';
 import { initSnap } from './engine/snapEngine.js';
 import { initDesktop, runBootSequence } from './engine/desktopEngine.js';
 import { initWidgets } from './engine/widgets.js';
+import { initTheme } from './engine/themeEngine.js';
+import { initNotifications } from './engine/notificationEngine.js';
 
 // Expose global functions for HTML (onclick handlers)
 window.openApp = openApp;
@@ -20,10 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
     runBootSequence();
 
     // 2. Initialize Engines
+    initTheme();
     initWindowManager();
     initSnap();
     initDesktop();
     initWidgets();
+    initNotifications();
 
     // 3. Deferred High Cost Init (Gestures/Voice)
     // Wait for boot to settle slightly

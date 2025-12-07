@@ -114,6 +114,12 @@ function onResults(results, canvasCtx) {
 
         } else {
             // NORMAL LOGIC
+
+            // Ensure visual state if idle
+            if (!isPinching && !isFist) {
+                statusEl.innerText = "IDLE";
+            }
+
             if (isFist) {
                 statusEl.innerText = "FIST (Right Click)";
                 cursorEl.classList.add("fist");
@@ -148,7 +154,7 @@ function onResults(results, canvasCtx) {
                 }
 
             } else {
-                statusEl.innerText = "IDLE";
+
                 cursorEl.classList.remove("active");
                 cursorEl.classList.remove("fist");
 

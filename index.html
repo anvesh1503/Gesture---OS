@@ -79,6 +79,14 @@
             </div>
             <div class="window-content settings-content">
                 <h2>System Settings</h2>
+                <div class="setting-item theme-section">
+                    <span>Theme</span>
+                    <div class="theme-grid">
+                        <div class="theme-btn dark" data-theme="dark" title="Dark Mode"></div>
+                        <div class="theme-btn light" data-theme="light" title="Light Mode"></div>
+                        <div class="theme-btn blue" data-theme="blue" title="Blue Accent"></div>
+                    </div>
+                </div>
                 <div class="setting-item">
                     <span>Dark Mode</span>
                     <div class="toggle active"></div>
@@ -88,11 +96,11 @@
                     <div class="toggle active"></div>
                 </div>
                 <div class="setting-item">
-                     <span>Bluetooth</span>
-                     <div class="toggle"></div>
+                    <span>Bluetooth</span>
+                    <div class="toggle"></div>
                 </div>
                 <!-- Cleaned up duplicate nesting here from original -->
-                <div class="setting-item">
+                <div class="setting-item" id="voice-setting-row">
                     <div style="display: flex; flex-direction: column;">
                         <span>Voice Commands</span>
                         <span id="voice-status" style="font-size: 10px; opacity: 0.5;">Off</span>
@@ -149,6 +157,8 @@
         <div class="taskbar-icon" data-app="settings">⚙️</div>
         <div class="taskbar-spacer"></div>
         <div class="taskbar-clock">12:00 PM</div>
+        <div class="taskbar-divider"></div>
+        <div class="taskbar-icon" id="notif-btn" title="Notifications">🔔</div>
     </div>
 
     <!-- Gesture Debug Overlay (Bottom Left) -->
@@ -173,7 +183,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-    
+
     <!-- Main Application Module -->
     <script type="module" src="main.js"></script>
 

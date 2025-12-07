@@ -4,6 +4,11 @@
    ========================================================= */
 import { openApp, bringToFront } from './windowManager.js';
 
+/* ---- State ---- */
+let desktops = [{ id: 1, name: 'Desktop 1' }];
+let activeDesktopIndex = 0;
+let windowWorkspaceMap = {};
+
 /* ---- Boot Screen ---- */
 export function runBootSequence() {
     if (document.getElementById('pine-boot-screen')) return;
@@ -64,7 +69,7 @@ export function initDesktop() {
     initVirtualDesktops();
 }
 
-function toggleStartMenu() {
+export function toggleStartMenu() {
     const menu = document.getElementById("start-menu");
     if (!menu) return;
     if (menu.style.display === "flex") {
@@ -77,10 +82,6 @@ function toggleStartMenu() {
 
 /* ---- Virtual Desktops (Task View) ---- */
 function initVirtualDesktops() {
-    let desktops = [{ id: 1, name: 'Desktop 1' }];
-    let activeDesktopIndex = 0;
-    let windowWorkspaceMap = {};
-
     const taskViewBtn = document.getElementById('task-view-btn');
     const overlay = document.createElement('div');
     overlay.id = 'task-view-overlay';
@@ -90,33 +91,13 @@ function initVirtualDesktops() {
     `;
     document.body.appendChild(overlay);
 
-    const tvList = overlay.querySelector('#tv-list');
+    if (taskViewBtn) taskViewBtn.onclick = () => toggleTaskView();
+    overlay.onclick = (e) => { if (e.target === overlay) toggleTaskView(false); };
 
-    function switchDesktop(index) {
-        if (index < 0 || index >= desktops.length) return;
-        activeDesktopIndex = index;
+    // Init Map
+    document.querySelectorAll('.window').forEach(w => windowWorkspaceMap[w.id] = 0);
 
-        document.querySelectorAll('.window').forEach(win => {
-            if (!win.id) return;
-            if (windowWorkspaceMap[win.id] === undefined) {
-                // If unassigned, assume current (safety)
-                if (win.style.display !== 'none') {
-                    windowWorkspaceMap[win.id] = activeDesktopIndex;
-                } else {
-                    windowWorkspaceMap[win.id] = 0; // Default to Desktop 1
-                }
-            }
-
-            if (windowWorkspaceMap[win.id] === activeDesktopIndex) {
-                win.classList.remove('hidden-by-workspace');
-            } else {
-                win.classList.add('hidden-by-workspace');
-                win.classList.remove('active-focus');
-            }
-        });
-        renderTaskView();
-    }
-
+    // Observer for new windows
     const observer = new MutationObserver((mutations) => {
         mutations.forEach(m => {
             if (m.type === 'attributes' && (m.attributeName === 'style')) {
@@ -133,71 +114,108 @@ function initVirtualDesktops() {
             }
         });
     });
-
     observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['style'] });
+}
 
-    function renderTaskView() {
-        tvList.innerHTML = '';
-        desktops.forEach((d, i) => {
-            const el = document.createElement('div');
-            el.className = `desktop-thumbnail ${i === activeDesktopIndex ? 'active' : ''}`;
-            el.innerHTML = `
-                <div class="desktop-preview-box"></div>
-                <div class="desktop-name">${d.name}</div>
-                ${i > 0 ? '<div class="close-desktop-btn">✕</div>' : ''}
-            `;
-            el.onclick = (e) => {
-                if (e.target.classList.contains('close-desktop-btn')) {
-                    e.stopPropagation();
-                    desktops.splice(i, 1);
-                    if (activeDesktopIndex >= i) activeDesktopIndex = Math.max(0, activeDesktopIndex - 1);
-                    // Reassign windows
-                    for (const w in windowWorkspaceMap) {
-                        if (windowWorkspaceMap[w] === i) windowWorkspaceMap[w] = 0;
-                        else if (windowWorkspaceMap[w] > i) windowWorkspaceMap[w]--;
-                    }
-                    switchDesktop(activeDesktopIndex);
-                } else {
-                    switchDesktop(i);
-                    toggleOverlay(false);
+function toggleTaskView(force) {
+    const overlay = document.getElementById('task-view-overlay');
+    const isVisible = overlay.classList.contains('visible');
+    const show = force !== undefined ? force : !isVisible;
+
+    if (show) {
+        overlay.style.display = 'flex';
+        void overlay.offsetWidth;
+        overlay.classList.add('visible');
+        overlay.style.pointerEvents = 'auto';
+        renderTaskView(overlay);
+    } else {
+        overlay.classList.remove('visible');
+        overlay.style.pointerEvents = 'none';
+        setTimeout(() => { if (!overlay.classList.contains('visible')) overlay.style.display = 'none'; }, 300);
+    }
+}
+
+function renderTaskView(overlay) {
+    const tvList = overlay.querySelector('#tv-list');
+    tvList.innerHTML = '';
+    desktops.forEach((d, i) => {
+        const el = document.createElement('div');
+        el.className = `desktop-thumbnail ${i === activeDesktopIndex ? 'active' : ''}`;
+        el.innerHTML = `
+            <div class="desktop-preview-box"></div>
+            <div class="desktop-name">${d.name}</div>
+            ${i > 0 ? '<div class="close-desktop-btn">✕</div>' : ''}
+        `;
+        el.onclick = (e) => {
+            if (e.target.classList.contains('close-desktop-btn')) {
+                e.stopPropagation();
+                desktops.splice(i, 1);
+                if (activeDesktopIndex >= i) activeDesktopIndex = Math.max(0, activeDesktopIndex - 1);
+                // Reassign windows
+                for (const w in windowWorkspaceMap) {
+                    if (windowWorkspaceMap[w] === i) windowWorkspaceMap[w] = 0;
+                    else if (windowWorkspaceMap[w] > i) windowWorkspaceMap[w]--;
                 }
-            };
-            tvList.appendChild(el);
-        });
+                switchDesktop(activeDesktopIndex);
+            } else {
+                switchDesktop(i);
+                toggleTaskView(false);
+            }
+        };
+        tvList.appendChild(el);
+    });
 
-        if (desktops.length < 6) {
-            const addBtn = document.createElement('div');
-            addBtn.className = 'add-desktop-btn';
-            addBtn.innerHTML = '+';
-            addBtn.onclick = () => {
-                desktops.push({ id: Date.now(), name: `Desktop ${desktops.length + 1}` });
-                switchDesktop(desktops.length - 1);
-                renderTaskView();
-            };
-            tvList.appendChild(addBtn);
-        }
+    if (desktops.length < 6) {
+        const addBtn = document.createElement('div');
+        addBtn.className = 'add-desktop-btn';
+        addBtn.innerHTML = '+';
+        addBtn.onclick = () => {
+            desktops.push({ id: Date.now(), name: `Desktop ${desktops.length + 1}` });
+            switchDesktop(desktops.length - 1);
+            toggleTaskView(false); // Optional: close on new desktop creation? maybe stay open
+            renderTaskView(overlay); // re-render
+        };
+        tvList.appendChild(addBtn);
     }
+}
 
-    function toggleOverlay(force) {
-        const isVisible = overlay.classList.contains('visible');
-        const show = force !== undefined ? force : !isVisible;
+function switchDesktop(index) {
+    if (index < 0 || index >= desktops.length) return;
+    activeDesktopIndex = index;
 
-        if (show) {
-            overlay.style.display = 'flex';
-            void overlay.offsetWidth;
-            overlay.classList.add('visible');
-            overlay.style.pointerEvents = 'auto';
-            renderTaskView();
+    document.querySelectorAll('.window').forEach(win => {
+        if (!win.id) return;
+        if (windowWorkspaceMap[win.id] === undefined) {
+            // If unassigned, assume current (safety)
+            if (win.style.display !== 'none') {
+                windowWorkspaceMap[win.id] = activeDesktopIndex;
+            } else {
+                windowWorkspaceMap[win.id] = 0; // Default to Desktop 1
+            }
+        }
+
+        if (windowWorkspaceMap[win.id] === activeDesktopIndex) {
+            win.classList.remove('hidden-by-workspace');
         } else {
-            overlay.classList.remove('visible');
-            overlay.style.pointerEvents = 'none';
-            setTimeout(() => { if (!overlay.classList.contains('visible')) overlay.style.display = 'none'; }, 300);
+            win.classList.add('hidden-by-workspace');
+            win.classList.remove('active-focus');
         }
+    });
+}
+
+// Global API for Gestures
+export function cycleDesktop(direction) {
+    // direction: 1 (Next), -1 (Prev)
+    let newIndex = activeDesktopIndex + direction;
+    // Circular? Or bounded? Let's do Bounded.
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= desktops.length) newIndex = desktops.length - 1;
+
+    if (newIndex !== activeDesktopIndex) {
+        switchDesktop(newIndex);
+        // Show a brief toast or indicator?
+        // showNotification('Desktop', `Switched to Desktop ${newIndex + 1}`);
+        return true;
     }
-
-    if (taskViewBtn) taskViewBtn.onclick = () => toggleOverlay();
-    overlay.onclick = (e) => { if (e.target === overlay) toggleOverlay(false); };
-
-    // Init Map
-    document.querySelectorAll('.window').forEach(w => windowWorkspaceMap[w.id] = 0);
+    return false;
 }

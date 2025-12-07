@@ -1,22 +1,102 @@
 :root {
+    /* Default (Dark) */
     --bg-color: #1a1a1a;
     --taskbar-bg: rgba(20, 20, 20, 0.85);
     --window-bg: rgba(30, 30, 30, 0.9);
     --accent-color: #0078d7;
     --text-color: #ffffff;
     --border-color: rgba(255, 255, 255, 0.1);
+    --hover-bg: rgba(255, 255, 255, 0.1);
+    --bg-image: url('nature_wallpaper.png');
+}
+
+/* Light Theme */
+[data-theme="light"] {
+    --bg-color: #f0f0f0;
+    --taskbar-bg: rgba(240, 240, 240, 0.85);
+    --window-bg: rgba(255, 255, 255, 0.9);
+    --accent-color: #0078d7;
+    --text-color: #000000;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --hover-bg: rgba(0, 0, 0, 0.05);
+    /* Use a gradient or solid color if no light wallpaper provided, 
+       but we keep the nature one or override it. 
+       Let's override to a light gradient for distinctiveness if no image exists. */
+    --bg-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* Blue Theme */
+[data-theme="blue"] {
+    --bg-color: #0f172a;
+    --taskbar-bg: rgba(15, 23, 42, 0.85);
+    --window-bg: rgba(30, 41, 59, 0.9);
+    --accent-color: #38bdf8;
+    --text-color: #e2e8f0;
+    --border-color: rgba(56, 189, 248, 0.2);
+    --hover-bg: rgba(56, 189, 248, 0.1);
+    --bg-image: linear-gradient(to bottom, #0f172a, #1e293b);
 }
 
 body {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', sans-serif;
-    background: url('nature_wallpaper.png') no-repeat center center fixed;
+    background: var(--bg-color);
+    background-image: var(--bg-image);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
     background-size: cover;
     overflow: hidden;
     color: var(--text-color);
     user-select: none;
+    transition: color 0.3s, background 0.3s;
 }
+
+/* Theme Swatches in Settings */
+.theme-section {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.theme-grid {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.theme-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.theme-btn:hover {
+    transform: scale(1.05);
+}
+
+.theme-btn.active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-color);
+}
+
+.theme-btn.dark {
+    background: #1a1a1a;
+}
+
+.theme-btn.light {
+    background: #f0f0f0;
+}
+
+.theme-btn.blue {
+    background: #0f172a;
+}
+
 
 /* =========================================================
    DESKTOP & ICONS
@@ -91,8 +171,15 @@ body {
 }
 
 @keyframes popIn {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .title-bar {
@@ -152,20 +239,26 @@ body {
 }
 
 .resize-handle-right {
-    top: 0; right: 0;
-    width: 6px; height: 100%;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
     cursor: e-resize;
 }
 
 .resize-handle-bottom {
-    bottom: 0; left: 0;
-    width: 100%; height: 6px;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
     cursor: s-resize;
 }
 
 .resize-handle-corner {
-    bottom: 0; right: 0;
-    width: 15px; height: 15px;
+    bottom: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
     cursor: se-resize;
     z-index: 101;
 }
@@ -229,6 +322,14 @@ textarea {
     align-items: center;
     padding: 10px 0;
     border-bottom: 1px solid var(--border-color);
+}
+
+#voice-setting-row {
+    cursor: pointer;
+}
+
+#voice-setting-row:hover {
+    background: var(--hover-bg);
 }
 
 .toggle {
@@ -353,8 +454,15 @@ textarea {
 }
 
 @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .start-header {
@@ -408,16 +516,20 @@ textarea {
     background: black;
 }
 
-#camera, #output_canvas {
+#camera,
+#output_canvas {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     transform: scaleX(-1);
 }
 
 #gesture-status {
     position: absolute;
-    bottom: 5px; left: 0;
+    bottom: 5px;
+    left: 0;
     width: 100%;
     text-align: center;
     color: #0f0;
@@ -430,8 +542,10 @@ textarea {
 /* Camera Nav */
 .camera-nav {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 30px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
     background: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: flex-end;
@@ -441,7 +555,8 @@ textarea {
     z-index: 100;
     opacity: 0;
     transition: opacity 0.2s;
-    pointer-events: auto; /* Enable clicking buttons */
+    pointer-events: auto;
+    /* Enable clicking buttons */
 }
 
 .camera-container:hover .camera-nav {
@@ -449,7 +564,8 @@ textarea {
 }
 
 .cam-btn {
-    width: 24px; height: 24px;
+    width: 24px;
+    height: 24px;
     color: white;
     display: flex;
     justify-content: center;
@@ -470,7 +586,8 @@ textarea {
 
 /* Camera States */
 #gesture-overlay.large .camera-container {
-    width: 320px; height: 240px;
+    width: 320px;
+    height: 240px;
 }
 
 #gesture-overlay.transparent .camera-container {
@@ -496,7 +613,8 @@ textarea {
 ========================================================= */
 #custom-cursor {
     position: fixed;
-    width: 20px; height: 20px;
+    width: 20px;
+    height: 20px;
     background: rgba(255, 255, 255, 0.8);
     border: 2px solid var(--accent-color);
     border-radius: 50%;
@@ -509,13 +627,15 @@ textarea {
 
 #custom-cursor.active {
     background: #0f0;
-    width: 15px; height: 15px;
+    width: 15px;
+    height: 15px;
 }
 
 #custom-cursor.fist {
     background: cyan;
     border-color: cyan;
-    width: 25px; height: 25px;
+    width: 25px;
+    height: 25px;
     border-radius: 4px;
 }
 
@@ -524,8 +644,10 @@ textarea {
 ========================================================= */
 #pine-boot-screen {
     position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     background: #1a1a1a;
     background: radial-gradient(circle at center, #2a2a2a 0%, #111 100%);
     z-index: 999999;
@@ -564,7 +686,8 @@ textarea {
 }
 
 .pine-boot-bar-container {
-    width: 200px; height: 4px;
+    width: 200px;
+    height: 4px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
     overflow: hidden;
@@ -572,7 +695,8 @@ textarea {
 }
 
 .pine-boot-bar {
-    width: 0%; height: 100%;
+    width: 0%;
+    height: 100%;
     background: var(--accent-color);
     border-radius: 2px;
     animation: pineProgress 2s ease-in-out forwards;
@@ -586,14 +710,29 @@ textarea {
 }
 
 @keyframes pineScaleIn {
-    from { transform: scale(0.9); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 @keyframes pineProgress {
-    0% { width: 0%; }
-    50% { width: 70%; }
-    100% { width: 100%; }
+    0% {
+        width: 0%;
+    }
+
+    50% {
+        width: 70%;
+    }
+
+    100% {
+        width: 100%;
+    }
 }
 
 /* =========================================================
@@ -601,8 +740,10 @@ textarea {
 ========================================================= */
 #desktop-widgets-container {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     z-index: 10;
 }
@@ -640,27 +781,35 @@ textarea {
 
 /* Clock */
 #widget-clock {
-    width: 140px; height: 80px;
-    align-items: center; justify-content: center;
+    width: 140px;
+    height: 80px;
+    align-items: center;
+    justify-content: center;
 }
 
 .clock-time {
-    font-size: 32px; font-weight: 300; line-height: 1;
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1;
 }
 
 .clock-date {
-    font-size: 12px; opacity: 0.7; margin-top: 4px;
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 4px;
 }
 
 /* Calendar */
 #widget-calendar {
-    width: 200px; padding-bottom: 10px;
+    width: 200px;
+    padding-bottom: 10px;
 }
 
 .calendar-header {
     text-align: center;
     padding: 8px 0;
-    font-size: 14px; font-weight: 600;
+    font-size: 14px;
+    font-weight: 600;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -674,7 +823,8 @@ textarea {
 }
 
 .cal-day-name {
-    opacity: 0.5; margin-bottom: 4px;
+    opacity: 0.5;
+    margin-bottom: 4px;
 }
 
 .cal-day {
@@ -693,15 +843,19 @@ textarea {
     font-weight: bold;
 }
 
-.cal-day.empty { pointer-events: none; }
+.cal-day.empty {
+    pointer-events: none;
+}
 
 /* =========================================================
    TASK VIEW & SNAP OVERLAYS
 ========================================================= */
 #task-view-overlay {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(15px);
     z-index: 999950;
@@ -734,7 +888,8 @@ textarea {
 }
 
 .desktop-thumbnail {
-    width: 200px; height: 120px;
+    width: 200px;
+    height: 120px;
     background: rgba(255, 255, 255, 0.05);
     border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
@@ -754,14 +909,18 @@ textarea {
 /* Snap Preview */
 #pine-snap-overlay {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     z-index: 999900;
     display: none;
 }
 
-#pine-snap-overlay.active { display: block; }
+#pine-snap-overlay.active {
+    display: block;
+}
 
 .snap-preview {
     position: absolute;
@@ -778,7 +937,8 @@ textarea {
 /* Voice Toast */
 #voice-toast {
     position: fixed;
-    bottom: 80px; left: 50%;
+    bottom: 80px;
+    left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
@@ -800,8 +960,23 @@ textarea {
 }
 
 @keyframes fadeToast {
-    0% { opacity: 0; transform: translate(-50%, 10px); }
-    10% { opacity: 1; transform: translate(-50%, 0); }
-    80% { opacity: 1; transform: translate(-50%, 0); }
-    100% { opacity: 0; transform: translate(-50%, -10px); }
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+
+    10% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -10px);
+    }
 }

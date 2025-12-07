@@ -3,6 +3,7 @@
    Handles Web Speech API integration.
    ========================================================= */
 import { openApp, closeWin, hideAllWins, focusWin } from './windowManager.js';
+import { showNotification } from './notificationEngine.js';
 
 export function initVoice() {
     const toggle = document.getElementById('voice-toggle');
@@ -10,22 +11,8 @@ export function initVoice() {
     let recognition = null;
     let isEnabled = localStorage.getItem('pine_voice_enabled') === 'true';
 
-    // Toast Setup
-    let toast = document.getElementById('voice-toast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'voice-toast';
-        toast.innerHTML = '<span>🎙️</span><span id="voice-toast-text"></span>';
-        document.body.appendChild(toast);
-    }
-
-    function showToast(text) {
-        const textEl = document.getElementById('voice-toast-text');
-        if (textEl) textEl.innerText = text;
-        toast.classList.remove('show');
-        void toast.offsetWidth; // Trigger reflow
-        toast.classList.add('show');
-    }
+    // REMOVED: Local Toast Setup (Replaced by Notification Engine)
+    // We now use showNotification()
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -145,19 +132,19 @@ export function initVoice() {
                 const notepadWin = document.getElementById('win-notepad');
                 if (notepadWin && notepadWin.classList.contains('active-focus') && notepadWin.style.display !== 'none') {
                     if (cleanCmd.includes('close notepad')) {
-                        showToast('Closing Notepad');
+                        showNotification('Voice', 'Closing Notepad', 'info');
                         commands['close notepad']();
                         return;
                     }
                     insertTextIntoNotepad(rawTranscript);
-                    showToast('Typed: ' + rawTranscript);
+                    showNotification('Dictation', 'Typed: ' + rawTranscript, 'success');
                     return;
                 }
 
                 let matched = false;
                 for (const [cmd, action] of Object.entries(commands)) {
                     if (cleanCmd.includes(cmd)) {
-                        showToast(cmd);
+                        showNotification('Voice Command', cmd, 'success');
                         action();
                         matched = true;
                         break;
@@ -191,19 +178,27 @@ export function initVoice() {
         if (isEnabled) {
             toggle.classList.add('active');
             startVoice();
+            showNotification('Voice System', 'Listening enabled', 'success');
         } else {
             toggle.classList.remove('active');
             stopVoice();
+            showNotification('Voice System', 'Listening disabled', 'info');
         }
         localStorage.setItem('pine_voice_enabled', isEnabled);
     }
 
     if (toggle) {
         if (isEnabled) toggle.classList.add('active');
-        toggle.addEventListener('click', () => {
+
+        // Use the row for easier clicking
+        const row = document.getElementById('voice-setting-row');
+        const target = row || toggle;
+
+        target.addEventListener('click', () => {
             isEnabled = !isEnabled;
             updateState();
         });
+
         if (isEnabled) startVoice();
     }
 }

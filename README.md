@@ -79,4 +79,4 @@ Add notification center
 ❤️ Made By
 
 Anvesh — exploring AI, computer vision, and web development to build futuristic interfaces.
-If you like this project, please ⭐ star the repo — it motivates future updates!
+If you like this project,⭐ star the repo — it motivates future updates!

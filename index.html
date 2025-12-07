@@ -87,34 +87,37 @@
                     <span>Wi-Fi</span>
                     <div class="toggle active"></div>
                 </div>
-                <span>Bluetooth</span>
-                <div class="toggle"></div>
-            </div>
-            <div class="setting-item">
-                <div style="display: flex; flex-direction: column;">
-                    <span>Voice Commands</span>
-                    <span id="voice-status" style="font-size: 10px; opacity: 0.5;">Off</span>
+                <div class="setting-item">
+                     <span>Bluetooth</span>
+                     <div class="toggle"></div>
                 </div>
-                <div class="toggle" id="voice-toggle"></div>
+                <!-- Cleaned up duplicate nesting here from original -->
+                <div class="setting-item">
+                    <div style="display: flex; flex-direction: column;">
+                        <span>Voice Commands</span>
+                        <span id="voice-status" style="font-size: 10px; opacity: 0.5;">Off</span>
+                    </div>
+                    <div class="toggle" id="voice-toggle"></div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Browser Window -->
-    <div class="window" id="win-browser" style="top: 5%; left: 15%; width: 800px; height: 500px;">
-        <div class="title-bar">
-            <div class="title-text">Pine Browser</div>
-            <div class="window-controls">
-                <div class="control-btn minimize">_</div>
-                <div class="control-btn close">✕</div>
+        <!-- Browser Window -->
+        <div class="window" id="win-browser" style="top: 5%; left: 15%; width: 800px; height: 500px;">
+            <div class="title-bar">
+                <div class="title-text">Pine Browser</div>
+                <div class="window-controls">
+                    <div class="control-btn minimize">_</div>
+                    <div class="control-btn close">✕</div>
+                </div>
+            </div>
+            <div class="window-content" style="padding: 0; overflow: hidden;">
+                <iframe src="pine browser/index.html" style="width: 100%; height: 100%; border: none;"></iframe>
             </div>
         </div>
-        <div class="window-content" style="padding: 0; overflow: hidden;">
-            <iframe src="pine browser/index.html" style="width: 100%; height: 100%; border: none;"></iframe>
-        </div>
-    </div>
 
     </div>
+    <!-- End Desktop -->
 
     <!-- Start Menu -->
     <div id="start-menu">
@@ -127,12 +130,13 @@
         </div>
         <div class="pinned-apps">
             <h3>Pinned</h3>
-            <div class="start-app" data-app="notepad">📝 Notepad</div>
-            <div class="start-app" data-app="calculator">🧮 Calc</div>
-            <div class="start-app" data-app="settings">⚙️ Settings</div>
-            <div class="start-app" data-app="browser">🌐 Browser</div>
+            <div class="app-grid">
+                <div class="start-app" data-app="notepad">📝 Notepad</div>
+                <div class="start-app" data-app="calculator">🧮 Calc</div>
+                <div class="start-app" data-app="settings">⚙️ Settings</div>
+                <div class="start-app" data-app="browser">🌐 Browser</div>
+            </div>
         </div>
-    </div>
     </div>
 
     <!-- Taskbar -->
@@ -169,8 +173,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-    <!-- Main Bootloader -->
-    <script src="script.js"></script>
+    
+    <!-- Main Application Module -->
+    <script type="module" src="main.js"></script>
 
 </body>
 

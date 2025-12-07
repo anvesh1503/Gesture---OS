@@ -1,12 +1,9 @@
 /* =========================================================
    WIDGETS ENGINE
-   Clock and Calendar
-========================================================= */
-
-import { bringToFront } from './windowManager.js';
+   Handles Desktop Widgets (Clock, Calendar) and App Logic (Calculator).
+   ========================================================= */
 
 export function initWidgets() {
-    // 1. Container Injection
     const desktop = document.getElementById('desktop');
     if (!desktop || document.getElementById('desktop-widgets-container')) return;
 
@@ -14,7 +11,6 @@ export function initWidgets() {
     container.id = 'desktop-widgets-container';
     desktop.appendChild(container);
 
-    // 2. HTML
     const clockHTML = `
         <div class="pine-widget-header"></div>
         <div class="clock-time">00:00</div>
@@ -44,59 +40,60 @@ export function initWidgets() {
     const clockWidget = createWidget('widget-clock', clockHTML, window.innerWidth - 160, 20);
     const calendarWidget = createWidget('widget-calendar', calendarHTML, window.innerWidth - 220, 110);
 
-    // 4. Clock Logic
+    // Clock Logic
     function updateClock() {
         const now = new Date();
         const timeEl = clockWidget.querySelector('.clock-time');
         const dateEl = clockWidget.querySelector('.clock-date');
-
         if (timeEl) timeEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         if (dateEl) dateEl.innerText = now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 5. Calendar Logic
+    // Calendar Logic
     function renderCalendar() {
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth();
-
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const daysInMonth = lastDay.getDate();
         const startingDay = firstDay.getDay();
 
         const header = calendarWidget.querySelector('.calendar-header');
-        header.innerText = now.toLocaleDateString([], { month: 'long', year: 'numeric' });
+        if (header) header.innerText = now.toLocaleDateString([], { month: 'long', year: 'numeric' });
 
         const grid = calendarWidget.querySelector('.calendar-grid');
-        // Clear old days (keep headers - first 7 children)
-        while (grid.children.length > 7) {
-            grid.removeChild(grid.lastChild);
-        }
+        if (!grid) return;
 
-        // Empty slots
+        // Clear old days but keep headers
+        const dayNames = grid.querySelectorAll('.cal-day-name');
+        grid.innerHTML = '';
+        dayNames.forEach(d => grid.appendChild(d));
+
         for (let i = 0; i < startingDay; i++) {
             const empty = document.createElement('div');
             empty.className = 'cal-day empty';
             grid.appendChild(empty);
         }
 
-        // Days
         for (let i = 1; i <= daysInMonth; i++) {
             const day = document.createElement('div');
             day.classList.add('cal-day');
             day.innerText = i;
             if (i === now.getDate()) day.classList.add('today');
+            day.addEventListener('click', () => {
+                day.style.transform = 'scale(0.9)';
+                setTimeout(() => day.style.transform = 'scale(1)', 100);
+            });
             grid.appendChild(day);
         }
     }
     renderCalendar();
 
-    // 6. Drag Logic
-    let zIndex = 100; // Local zIndex tracking for widgets
-
+    // Widget Dragging
+    let zIndex = 100;
     function initDrag(widget) {
         const header = widget.querySelector('.pine-widget-header');
         let isDragging = false;
@@ -106,12 +103,10 @@ export function initWidgets() {
             e.preventDefault();
             isDragging = true;
             header.setPointerCapture(e.pointerId);
-
             startX = e.clientX;
             startY = e.clientY;
             initialLeft = widget.offsetLeft;
             initialTop = widget.offsetTop;
-
             zIndex++;
             widget.style.zIndex = zIndex;
             widget.style.cursor = 'grabbing';
@@ -135,4 +130,48 @@ export function initWidgets() {
 
     initDrag(clockWidget);
     initDrag(calendarWidget);
+
+    initCalculator();
+}
+
+// Calculator Logic
+function initCalculator() {
+    // We attach logic to the window which might not be visible yet, but exists in DOM
+    setTimeout(() => {
+        const calcWin = document.getElementById('win-calculator');
+        if (!calcWin) return;
+        const display = calcWin.querySelector('.calc-display');
+        const buttons = calcWin.querySelectorAll('button');
+
+        let expression = '';
+
+        buttons.forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const val = btn.innerText;
+                if (val === 'C') {
+                    expression = '';
+                    display.innerText = '0';
+                } else if (val === '=') {
+                    try {
+                        const safeExpr = expression.replace(/x/g, '*');
+                        if (safeExpr) {
+                            // eslint-disable-next-line
+                            const result = new Function('return ' + safeExpr)();
+                            const final = parseFloat(result.toFixed(8));
+                            display.innerText = final;
+                            expression = String(final);
+                        }
+                    } catch (e) {
+                        display.innerText = 'Error';
+                        expression = '';
+                    }
+                } else {
+                    if (display.innerText === 'Error') expression = '';
+                    expression += val;
+                    display.innerText = expression;
+                }
+            };
+        });
+    }, 500);
 }

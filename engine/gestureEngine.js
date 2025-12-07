@@ -1,72 +1,36 @@
 /* =========================================================
    GESTURE ENGINE
-   Handles MediaPipe, cursor movement, and gestures
-========================================================= */
-
-import { elementAt, toScreenCoords } from './utils.js';
+   Handles MediaPipe Hands integration, cursor control, and gesture recognition.
+   ========================================================= */
 import { bringToFront } from './windowManager.js';
 
-// Config
+const videoElement = document.getElementById("camera");
+const canvasElement = document.getElementById("output_canvas");
+const cursorEl = document.getElementById("custom-cursor");
+const statusEl = document.getElementById("gesture-status");
+
+/* ---- Config ---- */
 const CAMERA_MARGIN = 0.15;
 const PINCH_THRESHOLD = 0.06;
 const FIST_DEBOUNCE_MS = 800;
+const THROTTLE_MS = 30; // ~33 FPS
 
-// State
+/* ---- State ---- */
 let wasPinching = false;
 let isDragging = false;
 let dragTarget = null;
 let dragOffset = { x: 0, y: 0 };
 let lastFistTime = 0;
+let lastFrameTime = 0;
 
-// DOM
-const videoElement = document.getElementById("camera");
-const canvasElement = document.getElementById("output_canvas");
-const canvasCtx = canvasElement.getContext("2d");
-const cursorEl = document.getElementById("custom-cursor");
-const statusEl = document.getElementById("gesture-status");
+// Camera Box State
+let isCamDragging = false;
+let camDragOffset = { x: 0, y: 0 };
 
-/* ---- Helpers ---- */
-function findDraggableWindow(el) {
-    while (el) {
-        if (el.classList && el.classList.contains("window")) return el;
-        el = el.parentElement;
-    }
-    return null;
-}
-
-function fakeClick(x, y) {
-    const el = elementAt(x, y);
-    if (el) el.click();
-}
-
-function fakeMouseDown(x, y) {
-    const el = elementAt(x, y);
-    if (el) {
-        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: x, clientY: y }));
-    }
-}
-
-function fakeMouseUp(x, y) {
-    const el = elementAt(x, y);
-    if (el) {
-        el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: x, clientY: y }));
-    }
-}
-
-function fakeRightClick(x, y) {
-    const el = elementAt(x, y);
-    if (el) {
-        el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: x, clientY: y }));
-    }
-}
-
-/* ---- Main Logic ---- */
 export function initGestures() {
-    // Check dependencies
-    if (!window.Hands || !window.Camera) {
-        console.error("MediaPipe Hands/Camera libraries not loaded.");
-        return;
-    }
+    if (!videoElement || !canvasElement) return;
+
+    const canvasCtx = canvasElement.getContext("2d");
 
     const hands = new Hands({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -79,11 +43,15 @@ export function initGestures() {
         minTrackingConfidence: 0.6
     });
 
-    hands.onResults(onResults);
+    hands.onResults((results) => {
+        const now = Date.now();
+        if (now - lastFrameTime < THROTTLE_MS) return;
+        lastFrameTime = now;
+        onResults(results, canvasCtx);
+    });
 
     const camera = new Camera(videoElement, {
         onFrame: async () => {
-            // Basic error check for video state
             if (videoElement.videoWidth) {
                 await hands.send({ image: videoElement });
             }
@@ -91,94 +59,12 @@ export function initGestures() {
         width: 640,
         height: 480
     });
-
     camera.start();
+
+    initCameraButtons();
 }
 
-// Camera Box State
-let isCamDragging = false;
-let camDragOffset = { x: 0, y: 0 };
-let camPinchStart = 0;
-let camInteractLocked = false; // Is locked via button?
-
-function isCursorInCameraNav(x, y) {
-    const nav = document.getElementById('camera-nav');
-    if (!nav) return false;
-    // Visually it's opacity 0 usually, but we should interact if hovering container?
-    // CSS hover reveals it.
-    // Check nav rect
-    const rect = nav.getBoundingClientRect();
-    return (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
-}
-
-function handleCameraInteraction(x, y, isPinching) {
-    const overlay = document.getElementById('gesture-overlay');
-
-    // 1. Pinch Start
-    if (isPinching && !wasPinching) {
-        camPinchStart = Date.now();
-
-        // Check buttons
-        const el = document.elementFromPoint(x, y);
-        if (el && el.classList.contains('cam-btn')) {
-            // Click button immediately or on release? 
-            // Better on release for safety, or immediate tag.
-            // Let's do click on pinch start for responsiveness in this context
-            el.click();
-            return; // Don't start drag if clicked button
-        }
-
-        // Start Drag ?
-        if (overlay.classList.contains('locked')) {
-            // Locked, can't drag
-            statusEl.innerText = "LOCKED";
-            return;
-        }
-
-        isCamDragging = true;
-        camDragOffset.x = x - overlay.offsetLeft;
-        camDragOffset.y = y - overlay.offsetTop;
-    }
-
-    // 2. Pinching (Hold)
-    if (isPinching) {
-        if (isCamDragging) {
-            overlay.style.left = (x - camDragOffset.x) + 'px';
-            overlay.style.top = (y - camDragOffset.y) + 'px';
-            overlay.style.bottom = 'auto'; // Clear default bottom-left
-            overlay.style.right = 'auto';
-            statusEl.innerText = "MOVING CAM";
-        }
-    } else {
-        // Released
-        isCamDragging = false;
-    }
-}
-
-// Helper for Camera Buttons
-function initCameraButtons() {
-    const overlay = document.getElementById('gesture-overlay');
-
-    document.getElementById('btn-minimize').onclick = () => {
-        overlay.classList.toggle('minimized');
-    };
-    document.getElementById('btn-size').onclick = () => {
-        overlay.classList.toggle('large');
-    };
-    document.getElementById('btn-opacity').onclick = () => {
-        overlay.classList.toggle('transparent');
-    };
-    document.getElementById('btn-lock').onclick = () => {
-        overlay.classList.toggle('locked');
-        const btn = document.getElementById('btn-lock');
-        btn.classList.toggle('active');
-        btn.innerText = overlay.classList.contains('locked') ? '🔒' : '🔓';
-    };
-}
-// Run once
-setTimeout(initCameraButtons, 1000);
-
-function onResults(results) {
+function onResults(results, canvasCtx) {
     if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
         canvasElement.width = videoElement.videoWidth;
         canvasElement.height = videoElement.videoHeight;
@@ -190,16 +76,18 @@ function onResults(results) {
         const lm = results.multiHandLandmarks[0];
 
         // Draw Skeleton
-        if (window.drawConnectors && window.drawLandmarks) {
+        if (window.drawConnectors && window.HAND_CONNECTIONS) {
             drawConnectors(canvasCtx, lm, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
             drawLandmarks(canvasCtx, lm, { color: '#FF0000', lineWidth: 1 });
         }
 
         // 1. Move Cursor
         const indexTip = lm[8];
-        const pos = toScreenCoords(indexTip, CAMERA_MARGIN);
-        cursorEl.style.left = pos.x + "px";
-        cursorEl.style.top = pos.y + "px";
+        const pos = toScreenCoords(indexTip);
+        if (cursorEl) {
+            cursorEl.style.left = pos.x + "px";
+            cursorEl.style.top = pos.y + "px";
+        }
 
         // 2. Detect Pinch
         const thumbTip = lm[4];
@@ -214,22 +102,18 @@ function onResults(results) {
         if (lm[20].y < lm[18].y) extended++;
         const isFist = (extended === 0);
 
-        // ---- NEW INTERACTION LAYER ----
-        // Prioritize Camera Nav interaction
+        // ---- NEW CAM LOGIC ----
         if (isCursorInCameraNav(pos.x, pos.y) || isCamDragging) {
-            // Hover effect
             const nav = document.getElementById('camera-nav');
             if (nav) nav.style.opacity = 1;
 
             handleCameraInteraction(pos.x, pos.y, isPinching);
 
-            // UI Feedback
             cursorEl.classList.add("active");
             if (!isCamDragging) statusEl.innerText = "CAM CONTROLS";
 
         } else {
-            // NORMAL OS INTERACTION
-
+            // NORMAL LOGIC
             if (isFist) {
                 statusEl.innerText = "FIST (Right Click)";
                 cursorEl.classList.add("fist");
@@ -273,14 +157,15 @@ function onResults(results) {
                     if (isDragging) {
                         isDragging = false;
                         dragTarget = null;
+                        // Trigger synthetic mouseup for snap/drop logic
+                        window.dispatchEvent(new MouseEvent('mouseup', { clientX: pos.x, clientY: pos.y }));
                     } else {
                         fakeMouseUp(pos.x, pos.y);
-                        fakeClick(pos.x, pos.y); // Trigger click on release
+                        fakeClick(pos.x, pos.y);
                     }
                 }
             }
         }
-        // -------------------------------
 
         wasPinching = isPinching;
 
@@ -289,4 +174,108 @@ function onResults(results) {
     }
 
     canvasCtx.restore();
+}
+
+/* ---- Helpers ---- */
+function toScreenCoords(lm) {
+    let x = 1 - lm.x;
+    let y = lm.y;
+    let x_mapped = (x - CAMERA_MARGIN) / (1 - 2 * CAMERA_MARGIN);
+    let y_mapped = (y - CAMERA_MARGIN) / (1 - 2 * CAMERA_MARGIN);
+    x_mapped = Math.max(0, Math.min(1, x_mapped));
+    y_mapped = Math.max(0, Math.min(1, y_mapped));
+
+    return {
+        x: x_mapped * window.innerWidth,
+        y: y_mapped * window.innerHeight
+    };
+}
+
+function elementAt(x, y) {
+    return document.elementFromPoint(x, y);
+}
+
+function findDraggableWindow(el) {
+    while (el) {
+        if (el.classList && el.classList.contains("window")) return el;
+        el = el.parentElement;
+    }
+    return null;
+}
+
+function fakeClick(x, y) {
+    const el = elementAt(x, y);
+    if (el) el.click();
+}
+
+function fakeMouseDown(x, y) {
+    const el = elementAt(x, y);
+    if (el) el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: x, clientY: y }));
+}
+
+function fakeMouseUp(x, y) {
+    const el = elementAt(x, y);
+    if (el) el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: x, clientY: y }));
+}
+
+function fakeRightClick(x, y) {
+    const el = elementAt(x, y);
+    if (el) el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: x, clientY: y }));
+}
+
+/* ---- Camera Overlay Logic ---- */
+function isCursorInCameraNav(x, y) {
+    const nav = document.getElementById('camera-nav');
+    if (!nav) return false;
+    const rect = nav.getBoundingClientRect();
+    return (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+}
+
+function handleCameraInteraction(x, y, isPinching) {
+    const overlay = document.getElementById('gesture-overlay');
+
+    if (isPinching && !wasPinching) {
+        const el = document.elementFromPoint(x, y);
+        if (el && el.classList.contains('cam-btn')) {
+            el.click();
+            return;
+        }
+        if (overlay.classList.contains('locked')) {
+            statusEl.innerText = "LOCKED";
+            return;
+        }
+        isCamDragging = true;
+        camDragOffset.x = x - overlay.offsetLeft;
+        camDragOffset.y = y - overlay.offsetTop;
+    }
+
+    if (isPinching) {
+        if (isCamDragging) {
+            overlay.style.left = (x - camDragOffset.x) + 'px';
+            overlay.style.top = (y - camDragOffset.y) + 'px';
+        }
+    } else {
+        isCamDragging = false;
+    }
+}
+
+function initCameraButtons() {
+    const overlay = document.getElementById('gesture-overlay');
+    if (!overlay) return;
+
+    const btnMin = document.getElementById('btn-minimize');
+    if (btnMin) btnMin.onclick = () => overlay.classList.toggle('minimized');
+
+    const btnSize = document.getElementById('btn-size');
+    if (btnSize) btnSize.onclick = () => overlay.classList.toggle('large');
+
+    const btnOp = document.getElementById('btn-opacity');
+    if (btnOp) btnOp.onclick = () => overlay.classList.toggle('transparent');
+
+    const btnLock = document.getElementById('btn-lock');
+    if (btnLock) btnLock.onclick = () => {
+        overlay.classList.toggle('locked');
+        btnLock.classList.toggle('active');
+        btnLock.innerText = overlay.classList.contains('locked') ? '🔒' : '🔓';
+    };
 }

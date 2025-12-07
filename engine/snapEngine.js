@@ -1,28 +1,33 @@
 /* =========================================================
    SNAP ENGINE
-   Handles window snapping (Aero Snap)
-========================================================= */
+   Handles Aero Snap-like window docking behaviors.
+   ========================================================= */
 
 export function initSnap() {
-    // 1. UI Setup
     const overlay = document.createElement('div');
     overlay.id = 'pine-snap-overlay';
+
     const preview = document.createElement('div');
     preview.className = 'snap-preview';
     overlay.appendChild(preview);
     document.body.appendChild(overlay);
 
-    // State
     let activeWindow = null;
-    let snapTarget = null; // 'left', 'right', 'maximize'
+    let snapTarget = null;
+    let isDragging = false;
 
-    // 2. Observer
+    // Observe style changes to detect dragging
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((m) => {
             if (m.type === 'attributes' && m.attributeName === 'style') {
                 const win = m.target;
                 if (win.classList.contains('window') && win.style.display !== 'none') {
-                    handleDrag(win, overlay, preview);
+                    // Check if dragging (interacting) logic is needed? 
+                    // script.js just assumed movement meant potential interaction.
+                    // We verify it's not a snap animation itself
+                    if (!win.classList.contains('snapping')) {
+                        handleDrag(win);
+                    }
                 }
             }
         });
@@ -34,33 +39,26 @@ export function initSnap() {
         attributeFilter: ['style']
     });
 
-    function handleDrag(win, overlay, preview) {
+    function handleDrag(win) {
         const rect = win.getBoundingClientRect();
         const screenW = window.innerWidth;
-        const taskbarH = 60; // Approx
-        const threshold = 30; // px from edge
+        const taskbarH = 60;
+        const threshold = 30;
 
-        // Reset
         snapTarget = null;
         let previewRect = null;
 
-        // 1. Maximize (Top)
         if (rect.top < threshold) {
             snapTarget = 'maximize';
             previewRect = { top: 0, left: 0, width: '100%', height: `calc(100% - ${taskbarH}px)` };
-        }
-        // 2. Left Snap
-        else if (rect.left < threshold) {
+        } else if (rect.left < threshold) {
             snapTarget = 'left';
             previewRect = { top: 0, left: 0, width: '50%', height: `calc(100% - ${taskbarH}px)` };
-        }
-        // 3. Right Snap
-        else if (rect.right > screenW - threshold) {
+        } else if (rect.right > screenW - threshold) {
             snapTarget = 'right';
             previewRect = { top: 0, left: '50%', width: '50%', height: `calc(100% - ${taskbarH}px)` };
         }
 
-        // Update UI
         if (snapTarget) {
             overlay.classList.add('active');
             preview.classList.add('visible');
@@ -73,13 +71,11 @@ export function initSnap() {
         }
     }
 
-    // 3. Handle Drop
     function onDrop() {
         if (!activeWindow || !snapTarget) return;
 
         const win = activeWindow;
 
-        // Save restoration state if not snapped
         if (win.dataset.snapped !== 'true') {
             win.dataset.restW = win.style.width;
             win.dataset.restH = win.style.height;
@@ -107,9 +103,7 @@ export function initSnap() {
 
         setTimeout(() => win.classList.remove('snapping'), 250);
 
-        // Reset
         overlay.classList.remove('active');
-        preview.classList.remove('visible');
         activeWindow = null;
         snapTarget = null;
     }

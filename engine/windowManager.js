@@ -1,31 +1,28 @@
 /* =========================================================
-   WINDOW MANAGER MODULE
-   Opens, closes, and manages window focus/z-index
-========================================================= */
+   WINDOW MANAGER
+   Handles opening, closing, focusing, and resizing windows.
+   ========================================================= */
 
-// State
-let zIndexCounter = 100;
-
-// DOM Cache
 const windows = {
-    notepad: document.getElementById("win-notepad"),
-    calculator: document.getElementById("win-calculator"),
-    settings: document.getElementById("win-settings"),
-    browser: document.getElementById("win-browser")
+    notepad: () => document.getElementById("win-notepad"),
+    calculator: () => document.getElementById("win-calculator"),
+    settings: () => document.getElementById("win-settings"),
+    browser: () => document.getElementById("win-browser")
 };
 
-// Re-query windows dynamically if needed (e.g. if they are recreated), 
-// but for this static OS structure, caching is fine. 
-// However, to be robust against DOM changes potentially caused by virtual desktops (though we just hide them), we keep it simple.
+let zIndexCounter = 100;
 
+export function initWindowManager() {
+    setupEventListeners();
+    initResizer();
+    initFocusManager();
+}
+
+/* ---- Core Actions ---- */
 export function openApp(appName) {
-    // If elements are lost/recreated, re-get them
-    let win = windows[appName];
-    if (!win) {
-        win = document.getElementById(`win-${appName}`);
-        if (win) windows[appName] = win;
-    }
-
+    const getWin = windows[appName];
+    if (!getWin) return;
+    const win = getWin();
     if (win) {
         win.style.display = "flex";
         bringToFront(win);
@@ -38,82 +35,156 @@ export function closeWin(id) {
     if (win) win.style.display = "none";
 }
 
-export function bringToFront(el) {
-    if (!el) return;
-    zIndexCounter++;
-    el.style.zIndex = zIndexCounter;
-}
-
-export function closeStartMenu() {
-    const startMenu = document.getElementById("start-menu");
-    if (startMenu) startMenu.style.display = "none";
-}
-
-export function toggleStartMenu() {
-    const menu = document.getElementById("start-menu");
-    if (!menu) return;
-
-    if (menu.style.display === "flex") {
-        menu.style.display = "none";
-    } else {
-        menu.style.display = "flex";
-        bringToFront(menu);
-    }
-}
-
 export function hideAllWins() {
     document.querySelectorAll('.window').forEach(w => w.style.display = 'none');
 }
 
-export function initWindowManager() {
-    // Event Listeners for standard UI tasks
+export function focusWin(id) {
+    const win = document.getElementById(id);
+    if (win && win.style.display !== 'none') {
+        bringToFront(win);
+    }
+}
 
-    // 1. Taskbar & Desktop Icons
-    document.querySelectorAll(".desktop-icon, .taskbar-icon, .start-app").forEach(icon => {
-        // Remove old listeners to be safe? No, we are reloading script.
-        icon.onclick = () => { // Using onclick property to overwrite any existing
-            const app = icon.getAttribute("data-app");
-            if (app) openApp(app);
-        };
-    });
+export function bringToFront(el) {
+    zIndexCounter++;
+    el.style.zIndex = zIndexCounter;
+}
 
-    // 2. Start Button
-    const startBtn = document.getElementById("start-btn");
-    if (startBtn) startBtn.onclick = toggleStartMenu;
+function closeStartMenu() {
+    const menu = document.getElementById("start-menu");
+    if (menu) menu.style.display = "none";
+}
 
-    // 3. Window Controls (Close/Minimize)
+/* ---- Event Listeners ---- */
+function setupEventListeners() {
+    // Window Close Buttons
     document.querySelectorAll(".close").forEach(btn => {
-        btn.onclick = (e) => {
-            const win = e.target.closest(".window");
-            if (win) win.style.display = "none";
+        btn.onclick = (e) => { // Use onclick to replace listeners
+            e.target.closest(".window").style.display = "none";
         };
     });
 
+    // Minimize Buttons
     document.querySelectorAll(".minimize").forEach(btn => {
         btn.onclick = (e) => {
-            const win = e.target.closest(".window");
-            if (win) win.style.display = "none";
+            e.target.closest(".window").style.display = "none";
         };
     });
 
-    // 4. Click to focus
+    // Click to Focus
     document.querySelectorAll(".window").forEach(win => {
         win.addEventListener("mousedown", () => bringToFront(win));
     });
-
-    // 5. Settings Toggles
-    document.querySelectorAll(".toggle").forEach(toggle => {
-        toggle.onclick = () => {
-            toggle.classList.toggle("active");
-        };
-    });
-
-    // 6. Focus Manager Logic (Visual Highlight)
-    initFocusManager();
 }
 
+/* ---- Resizer Engine ---- */
+const Resizer = {
+    minWidth: 250,
+    minHeight: 200,
+    isResizing: false,
+    currentWindow: null,
+    resizeDir: null,
+    startX: 0,
+    startY: 0,
+    startWidth: 0,
+    startHeight: 0,
+    rafId: null,
+
+    init: function () {
+        document.querySelectorAll('.window').forEach(win => {
+            if (win.querySelector('.resize-handle')) return;
+
+            const right = document.createElement('div');
+            right.className = 'resize-handle resize-handle-right';
+            right.addEventListener('mousedown', (e) => this.startResize(e, 'right', win));
+
+            const bottom = document.createElement('div');
+            bottom.className = 'resize-handle resize-handle-bottom';
+            bottom.addEventListener('mousedown', (e) => this.startResize(e, 'bottom', win));
+
+            const corner = document.createElement('div');
+            corner.className = 'resize-handle resize-handle-corner';
+            corner.addEventListener('mousedown', (e) => this.startResize(e, 'corner', win));
+
+            win.appendChild(right);
+            win.appendChild(bottom);
+            win.appendChild(corner);
+        });
+
+        document.addEventListener('mousemove', (e) => this.resize(e.clientX, e.clientY));
+        document.addEventListener('mouseup', () => this.stopResize());
+    },
+
+    startResize: function (e, dir, win) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.isResizing = true;
+        this.currentWindow = win;
+        this.resizeDir = dir;
+        this.startX = e.clientX;
+        this.startY = e.clientY;
+
+        const rect = win.getBoundingClientRect();
+        this.startWidth = rect.width;
+        this.startHeight = rect.height;
+
+        bringToFront(win);
+        win.classList.add('resizing');
+        this.pollGesture();
+    },
+
+    pollGesture: function () {
+        if (!this.isResizing) return;
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor) {
+            const x = parseFloat(cursor.style.left);
+            const y = parseFloat(cursor.style.top);
+            if (!isNaN(x) && !isNaN(y)) {
+                this.resize(x, y);
+            }
+        }
+        this.rafId = requestAnimationFrame(() => this.pollGesture());
+    },
+
+    resize: function (clientX, clientY) {
+        if (!this.isResizing || !this.currentWindow) return;
+
+        const dx = clientX - this.startX;
+        const dy = clientY - this.startY;
+
+        if (this.resizeDir === 'right' || this.resizeDir === 'corner') {
+            const newWidth = Math.max(this.minWidth, this.startWidth + dx);
+            this.currentWindow.style.width = newWidth + 'px';
+        }
+
+        if (this.resizeDir === 'bottom' || this.resizeDir === 'corner') {
+            const newHeight = Math.max(this.minHeight, this.startHeight + dy);
+            this.currentWindow.style.height = newHeight + 'px';
+        }
+    },
+
+    stopResize: function () {
+        if (this.currentWindow) {
+            this.currentWindow.classList.remove('resizing');
+        }
+        this.isResizing = false;
+        this.currentWindow = null;
+        this.resizeDir = null;
+        if (this.rafId) {
+            cancelAnimationFrame(this.rafId);
+            this.rafId = null;
+        }
+    }
+};
+
+function initResizer() {
+    Resizer.init();
+}
+
+/* ---- Focus Manager ---- */
 function initFocusManager() {
-    // Setup MutationObserver for z-index changes
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.attributeName === 'style') {
@@ -124,6 +195,17 @@ function initFocusManager() {
 
     document.querySelectorAll('.window').forEach(win => {
         observer.observe(win, { attributes: true, attributeFilter: ['style'] });
+        win.addEventListener('mousedown', () => setFocus(win));
+    });
+}
+
+function setFocus(activeWin) {
+    document.querySelectorAll('.window').forEach(win => {
+        if (win === activeWin) {
+            win.classList.add('active-focus');
+        } else {
+            win.classList.remove('active-focus');
+        }
     });
 }
 
@@ -141,11 +223,7 @@ function updateFocusBasedOnZIndex() {
         }
     });
 
-    document.querySelectorAll('.window').forEach(win => {
-        if (win === topWindow) {
-            win.classList.add('active-focus');
-        } else {
-            win.classList.remove('active-focus');
-        }
-    });
+    if (topWindow) {
+        setFocus(topWindow);
+    }
 }

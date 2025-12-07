@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Gesture OS</title>
+</head>
+
+<body>
+
+    <!-- Desktop Environment -->
+    <div id="desktop">
+
+        <!-- Desktop Icons -->
+        <div class="desktop-icon" data-app="notepad">
+            <div class="icon-img">📝</div>
+            <div class="icon-label">Notepad</div>
+        </div>
+        <div class="desktop-icon" data-app="calculator">
+            <div class="icon-img">🧮</div>
+            <div class="icon-label">Calculator</div>
+        </div>
+        <div class="desktop-icon" data-app="settings">
+            <div class="icon-img">⚙️</div>
+            <div class="icon-label">Settings</div>
+        </div>
+        <div class="desktop-icon" data-app="browser">
+            <div class="icon-img">🌐</div>
+            <div class="icon-label">Browser</div>
+        </div>
+
+        <!-- Windows -->
+
+        <!-- Notepad Window -->
+        <div class="window" id="win-notepad" style="top: 10%; left: 10%;">
+            <div class="title-bar">
+                <div class="title-text">Notepad</div>
+                <div class="window-controls">
+                    <div class="control-btn minimize">_</div>
+                    <div class="control-btn close">✕</div>
+                </div>
+            </div>
+            <div class="window-content">
+                <textarea placeholder="Type something..."></textarea>
+            </div>
+        </div>
+
+        <!-- Calculator Window -->
+        <div class="window" id="win-calculator" style="top: 15%; left: 30%; width: 260px; height: 380px;">
+            <div class="title-bar">
+                <div class="title-text">Calculator</div>
+                <div class="window-controls">
+                    <div class="control-btn minimize">_</div>
+                    <div class="control-btn close">✕</div>
+                </div>
+            </div>
+            <div class="window-content calc-content">
+                <div class="calc-display">0</div>
+                <div class="calc-grid">
+                    <button>C</button><button>/</button><button>*</button><button>-</button>
+                    <button>7</button><button>8</button><button>9</button><button>+</button>
+                    <button>4</button><button>5</button><button>6</button><button>=</button>
+                    <button>1</button><button>2</button><button>3</button><button>.</button>
+                    <button style="grid-column: span 2;">0</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Window -->
+        <div class="window" id="win-settings" style="top: 20%; left: 50%;">
+            <div class="title-bar">
+                <div class="title-text">Settings</div>
+                <div class="window-controls">
+                    <div class="control-btn minimize">_</div>
+                    <div class="control-btn close">✕</div>
+                </div>
+            </div>
+            <div class="window-content settings-content">
+                <h2>System Settings</h2>
+                <div class="setting-item">
+                    <span>Dark Mode</span>
+                    <div class="toggle active"></div>
+                </div>
+                <div class="setting-item">
+                    <span>Wi-Fi</span>
+                    <div class="toggle active"></div>
+                </div>
+                <span>Bluetooth</span>
+                <div class="toggle"></div>
+            </div>
+            <div class="setting-item">
+                <div style="display: flex; flex-direction: column;">
+                    <span>Voice Commands</span>
+                    <span id="voice-status" style="font-size: 10px; opacity: 0.5;">Off</span>
+                </div>
+                <div class="toggle" id="voice-toggle"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Browser Window -->
+    <div class="window" id="win-browser" style="top: 5%; left: 15%; width: 800px; height: 500px;">
+        <div class="title-bar">
+            <div class="title-text">Pine Browser</div>
+            <div class="window-controls">
+                <div class="control-btn minimize">_</div>
+                <div class="control-btn close">✕</div>
+            </div>
+        </div>
+        <div class="window-content" style="padding: 0; overflow: hidden;">
+            <iframe src="pine browser/index.html" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- Start Menu -->
+    <div id="start-menu">
+        <div class="start-header">
+            <div class="user-profile">
+                <div class="avatar">👤</div>
+                <span>User</span>
+            </div>
+            <div class="power-btn">⏻</div>
+        </div>
+        <div class="pinned-apps">
+            <h3>Pinned</h3>
+            <div class="start-app" data-app="notepad">📝 Notepad</div>
+            <div class="start-app" data-app="calculator">🧮 Calc</div>
+            <div class="start-app" data-app="settings">⚙️ Settings</div>
+            <div class="start-app" data-app="browser">🌐 Browser</div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Taskbar -->
+    <div id="taskbar">
+        <div id="start-btn" class="taskbar-icon">⊞</div>
+        <div id="task-view-btn" class="taskbar-icon" title="Task View">🗔</div>
+        <div class="taskbar-divider"></div>
+        <div class="taskbar-icon" data-app="notepad">📝</div>
+        <div class="taskbar-icon" data-app="calculator">🧮</div>
+        <div class="taskbar-icon" data-app="settings">⚙️</div>
+        <div class="taskbar-spacer"></div>
+        <div class="taskbar-clock">12:00 PM</div>
+    </div>
+
+    <!-- Gesture Debug Overlay (Bottom Left) -->
+    <div id="gesture-overlay">
+        <div class="camera-container">
+            <div class="camera-nav" id="camera-nav">
+                <div class="cam-btn" id="btn-minimize">_</div>
+                <div class="cam-btn" id="btn-size">⤡</div>
+                <div class="cam-btn" id="btn-opacity">◐</div>
+                <div class="cam-btn" id="btn-lock">🔒</div>
+            </div>
+            <video id="camera" autoplay playsinline></video>
+            <canvas id="output_canvas"></canvas>
+            <div id="gesture-status">IDLE</div>
+        </div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div id="custom-cursor"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <!-- Main Bootloader -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>

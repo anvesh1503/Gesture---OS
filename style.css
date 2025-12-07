@@ -1,0 +1,1158 @@
+:root {
+    --bg-color: #1a1a1a;
+    --taskbar-bg: rgba(20, 20, 20, 0.85);
+    --window-bg: rgba(30, 30, 30, 0.9);
+    --accent-color: #0078d7;
+    --text-color: #ffffff;
+    --border-color: rgba(255, 255, 255, 0.1);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: url('nature_wallpaper.png') no-repeat center center fixed;
+    background-size: cover;
+    overflow: hidden;
+    color: var(--text-color);
+    user-select: none;
+}
+
+/* Desktop */
+#desktop {
+    width: 100vw;
+    height: calc(100vh - 48px);
+    /* Taskbar height */
+    position: relative;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 10px;
+}
+
+.desktop-icon {
+    width: 80px;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.desktop-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.icon-img {
+    font-size: 32px;
+    margin-bottom: 5px;
+}
+
+.icon-label {
+    font-size: 12px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    text-align: center;
+}
+
+/* Windows */
+.window {
+    position: absolute;
+    width: 500px;
+    height: 350px;
+    background: var(--window-bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: none;
+    /* Hidden by default */
+    flex-direction: column;
+    animation: popIn 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+    overflow: visible;
+    /* Changed from hidden to visible so handles can sit on edge if needed, though insdie is fine too */
+}
+
+/* Resize Handles */
+.resize-handle {
+    position: absolute;
+    z-index: 100;
+}
+
+.resize-handle-right {
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
+    cursor: e-resize;
+}
+
+.resize-handle-bottom {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    cursor: s-resize;
+}
+
+.resize-handle-corner {
+    bottom: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
+    cursor: se-resize;
+    z-index: 101;
+    /* Above others */
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.title-bar {
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    cursor: move;
+    cursor: move;
+    /* Indicates draggable */
+    transition: background 0.2s;
+}
+
+/* Active Window State */
+.window.active-focus {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+    border-color: rgba(255, 255, 255, 0.3);
+    z-index: 1000;
+    /* Ensure it visually pops, though JS handles z-index number */
+}
+
+.window.active-focus .title-bar {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.title-text {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.window-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.control-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.control-btn.close:hover {
+    background: #e81123;
+}
+
+.window-content {
+    flex: 1;
+    padding: 10px;
+    overflow: auto;
+}
+
+textarea {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: white;
+    resize: none;
+    outline: none;
+    font-family: monospace;
+}
+
+/* Calculator Styles */
+.calc-content {
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+.calc-display {
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    font-size: 32px;
+    text-align: right;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    flex: 1;
+}
+
+.calc-grid button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.calc-grid button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Settings Styles */
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.toggle {
+    width: 40px;
+    height: 20px;
+    background: #444;
+    border-radius: 10px;
+    position: relative;
+}
+
+.toggle.active {
+    background: var(--accent-color);
+}
+
+.toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+
+.toggle.active::after {
+    left: 22px;
+}
+
+/* Taskbar */
+#taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 48px;
+    background: var(--taskbar-bg);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    z-index: 10000;
+}
+
+.taskbar-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 2px;
+    transition: background 0.2s;
+}
+
+.taskbar-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#start-btn {
+    font-size: 24px;
+    color: var(--accent-color);
+}
+
+.taskbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color);
+    margin: 0 10px;
+}
+
+.taskbar-spacer {
+    flex: 1;
+}
+
+.taskbar-clock {
+    font-size: 12px;
+    padding: 0 10px;
+}
+
+/* Start Menu */
+#start-menu {
+    position: fixed;
+    bottom: 58px;
+    left: 10px;
+    width: 320px;
+    height: 400px;
+    background: var(--window-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    z-index: 9999;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.start-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pinned-apps {
+    padding: 15px;
+}
+
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.start-app {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.start-app:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Gesture Overlay */
+#gesture-overlay {
+    position: fixed;
+    bottom: 60px;
+    left: 10px;
+    z-index: 9998;
+    pointer-events: none;
+    /* Pass through clicks */
+}
+
+.camera-container {
+    position: relative;
+    width: 200px;
+    height: 150px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--accent-color);
+    background: black;
+}
+
+#camera,
+#output_canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(-1);
+    /* Mirror */
+}
+
+#gesture-status {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #0f0;
+    font-weight: bold;
+    text-shadow: 0 1px 2px black;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Custom Cursor */
+#custom-cursor {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid var(--accent-color);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 999999;
+    transform: translate(-50%, -50%);
+    transition: width 0.1s, height 0.1s, background 0.1s;
+    box-shadow: 0 0 10px var(--accent-color);
+}
+
+#custom-cursor.active {
+    background: #0f0;
+    width: 15px;
+    height: 15px;
+}
+
+#custom-cursor.fist {
+    background: cyan;
+    border-color: cyan;
+    width: 25px;
+    height: 25px;
+    border-radius: 4px;
+}
+
+/* =========================================================
+   BOOT SCREEN
+========================================================= */
+#pine-boot-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #1a1a1a;
+    /* Fallback */
+    background: radial-gradient(circle at center, #2a2a2a 0%, #111 100%);
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+    transition: opacity 0.3s ease;
+    user-select: none;
+}
+
+#pine-boot-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pine-boot-content {
+    text-align: center;
+    animation: pineScaleIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.pine-boot-logo {
+    font-size: 64px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.pine-boot-title {
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 4px;
+    margin-bottom: 40px;
+    text-transform: uppercase;
+}
+
+.pine-boot-bar-container {
+    width: 200px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.pine-boot-bar {
+    width: 0%;
+    height: 100%;
+    background: var(--accent-color);
+    border-radius: 2px;
+    animation: pineProgress 2s ease-in-out forwards;
+}
+
+.pine-boot-subtext {
+    margin-top: 15px;
+    font-size: 12px;
+    left: 10px;
+    width: 320px;
+    height: 400px;
+    background: var(--window-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    z-index: 9999;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.start-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pinned-apps {
+    padding: 15px;
+}
+
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.start-app {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.start-app:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Gesture Overlay */
+#gesture-overlay {
+    position: fixed;
+    bottom: 60px;
+    left: 10px;
+    z-index: 9998;
+    pointer-events: none;
+    /* Pass through clicks */
+}
+
+.camera-container {
+    position: relative;
+    width: 200px;
+    height: 150px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--accent-color);
+    background: black;
+}
+
+#camera,
+#output_canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(-1);
+    /* Mirror */
+}
+
+#gesture-status {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #0f0;
+    font-weight: bold;
+    text-shadow: 0 1px 2px black;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Camera Nav */
+.camera-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 5px;
+    box-sizing: border-box;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.camera-container:hover .camera-nav {
+    opacity: 1;
+}
+
+.cam-btn {
+    width: 24px;
+    height: 24px;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 4px;
+    margin-left: 2px;
+}
+
+.cam-btn:hover,
+.cam-btn.hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.cam-btn.active {
+    color: var(--accent-color);
+}
+
+/* Camera States */
+#gesture-overlay.large .camera-container {
+    width: 320px;
+    height: 240px;
+}
+
+#gesture-overlay.transparent .camera-container {
+    opacity: 0.4;
+}
+
+#gesture-overlay.locked .camera-container {
+    border-color: red;
+}
+
+#gesture-overlay.minimized .camera-container {
+    height: 30px;
+    overflow: hidden;
+}
+
+#gesture-overlay.minimized video,
+#gesture-overlay.minimized canvas {
+    display: none;
+}
+
+/* Custom Cursor */
+#custom-cursor {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid var(--accent-color);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 999999;
+    transform: translate(-50%, -50%);
+    transition: width 0.1s, height 0.1s, background 0.1s;
+    box-shadow: 0 0 10px var(--accent-color);
+}
+
+#custom-cursor.active {
+    background: #0f0;
+    width: 15px;
+    height: 15px;
+}
+
+#custom-cursor.fist {
+    background: cyan;
+    border-color: cyan;
+    width: 25px;
+    height: 25px;
+    border-radius: 4px;
+}
+
+/* =========================================================
+   BOOT SCREEN
+========================================================= */
+#pine-boot-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #1a1a1a;
+    /* Fallback */
+    background: radial-gradient(circle at center, #2a2a2a 0%, #111 100%);
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+    transition: opacity 0.3s ease;
+    user-select: none;
+}
+
+#pine-boot-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pine-boot-content {
+    text-align: center;
+    animation: pineScaleIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.pine-boot-logo {
+    font-size: 64px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.pine-boot-title {
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 4px;
+    margin-bottom: 40px;
+    text-transform: uppercase;
+}
+
+.pine-boot-bar-container {
+    width: 200px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.pine-boot-bar {
+    width: 0%;
+    height: 100%;
+    background: var(--accent-color);
+    border-radius: 2px;
+    animation: pineProgress 2s ease-in-out forwards;
+}
+
+.pine-boot-subtext {
+    margin-top: 15px;
+    font-size: 12px;
+    opacity: 0.5;
+    font-weight: 300;
+}
+
+@keyframes pineScaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pineProgress {
+    0% {
+        width: 0%;
+    }
+
+    50% {
+        width: 70%;
+    }
+
+    100% {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+   DESKTOP WIDGETS
+========================================================= */
+#desktop-widgets-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* Let clicks pass through to icons */
+    z-index: 10;
+    /* Above icons (0), below windows (100+) */
+}
+
+.pine-widget {
+    position: absolute;
+    background: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    color: white;
+    overflow: hidden;
+    pointer-events: auto;
+    /* Re-enable for the widget itself */
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s;
+}
+
+.pine-widget:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pine-widget-header {
+    height: 12px;
+    width: 100%;
+    cursor: grab;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.pine-widget-header:active {
+    cursor: grabbing;
+}
+
+/* Clock Widget */
+#widget-clock {
+    width: 140px;
+    height: 80px;
+    align-items: center;
+    justify-content: center;
+}
+
+.clock-time {
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.clock-date {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+/* Calendar Widget */
+#widget-calendar {
+    width: 200px;
+    padding-bottom: 10px;
+}
+
+.calendar-header {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 5px;
+    text-align: center;
+    font-size: 10px;
+}
+
+.cal-day-name {
+    opacity: 0.5;
+    margin-bottom: 4px;
+}
+
+.cal-day {
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.cal-day:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.cal-day.today {
+    background: var(--accent-color);
+    color: white;
+    font-weight: bold;
+}
+
+.cal-day.empty {
+    pointer-events: none;
+}
+
+/* =========================================================
+   VOICE COMMANDS
+========================================================= */
+#voice-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 999990;
+    /* Below cursor/splash, above windows */
+    display: none;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#voice-toast.show {
+    display: flex;
+    animation: fadeToast 2s ease forwards;
+}
+
+@keyframes fadeToast {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+
+    10% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -10px);
+    }
+}
+
+/* =========================================================
+   WINDOW SNAPPING
+========================================================= */
+#pine-snap-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* Click-through */
+    z-index: 999900;
+    /* High z-index but below cursor/boot */
+    display: none;
+}
+
+#pine-snap-overlay.active {
+    display: block;
+}
+
+.snap-preview {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform: scale(0.95);
+}
+
+/* =========================================================
+   VIRTUAL DESKTOPS
+========================================================= */
+/* Core visibility class - overrides inline display:flex/block */
+.window.hidden-by-workspace {
+    display: none !important;
+}
+
+/* Taskbar Button */
+#task-view-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 20px;
+    color: white;
+    transition: background 0.2s;
+    margin-right: 5px;
+}
+
+#task-view-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Task View Overlay */
+#task-view-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(15px);
+    z-index: 999950;
+    /* Below cursor/boot, above windows */
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#task-view-overlay.visible {
+    opacity: 1;
+}
+
+.tv-title {
+    color: white;
+    font-size: 24px;
+    margin-bottom: 30px;
+    font-weight: 300;
+    letter-spacing: 2px;
+}
+
+/* Desktop List */
+.desktop-list {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    overflow-x: auto;
+    max-width: 90%;
+}
+
+.desktop-thumbnail {
+    width: 200px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.desktop-thumbnail:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-5px);
+}
+
+.desktop-thumbnail.active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px var(--accent-color);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.desktop-name {
+    color: white;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.desktop-preview-box {
+    width: 80%;
+    height: 60%;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.add-desktop-btn {
+    width: 60px;
+    height: 120px;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 24px;
+    transition: all 0.2s;
+}
+
+.add-desktop-btn:hover {
+    color: white;
+    border-color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.close-desktop-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: red;
+    border-radius: 50%;
+    color: white;
+    font-size: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.desktop-thumbnail:hover .close-desktop-btn {
+    opacity: 1;
+}

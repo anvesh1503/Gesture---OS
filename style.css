@@ -796,6 +796,33 @@ textarea {
     margin-top: 4px;
 }
 
+/* =========================================================
+   VOICE TOAST
+   ========================================================= */
+#voice-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(-20px);
+}
+
+#voice-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 /* Calendar */
 #widget-calendar {
     width: 200px;

@@ -76,7 +76,7 @@ Add customizable widgets
 
 Add notification center
 
-❤️ Made By
+Made By
 
 Anvesh — exploring AI, computer vision, and web development to build futuristic interfaces.
 If you like this project,⭐ star the repo — it motivates future updates!

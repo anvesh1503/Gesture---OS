@@ -610,6 +610,8 @@ textarea {
 ========================================================= */
 #custom-cursor {
     position: fixed;
+    top: 0;
+    left: 0;
     width: 20px;
     height: 20px;
     background: rgba(255, 255, 255, 0.8);
@@ -617,15 +619,20 @@ textarea {
     border-radius: 50%;
     pointer-events: none;
     z-index: 999999;
-    transform: translate(-50%, -50%);
+    /* Transform will be set via JS for performance */
     transition: width 0.1s, height 0.1s, background 0.1s;
     box-shadow: 0 0 10px var(--accent-color);
+    /* Offset to center the cursor on the point */
+    margin-left: -10px;
+    margin-top: -10px;
 }
 
 #custom-cursor.active {
     background: #0f0;
     width: 15px;
     height: 15px;
+    margin-left: -7.5px;
+    margin-top: -7.5px;
 }
 
 #custom-cursor.fist {
@@ -634,6 +641,8 @@ textarea {
     width: 25px;
     height: 25px;
     border-radius: 4px;
+    margin-left: -12.5px;
+    margin-top: -12.5px;
 }
 
 /* =========================================================

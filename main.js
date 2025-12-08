@@ -3,17 +3,17 @@
    Orchestrates Gesture OS initialization.
    ========================================================= */
 
-const VERSION = '1.0.6'; // Update this version to bust cache
+import { initWindowManager, openApp, closeWin } from "./engine/windowManager.js";
+import { initGestures } from "./engine/gestureEngine.js";
+import { initVoice } from "./engine/voiceEngine.js";
+import { initSnap } from "./engine/snapEngine.js";
+import { initDesktop, runBootSequence } from "./engine/desktopEngine.js";
+import { initWidgets } from "./engine/widgets.js";
+import { initTheme } from "./engine/themeEngine.js";
+import { initNotifications } from "./engine/notificationEngine.js";
+import { initBrowser } from "./engine/browserEngine.js";
 
-import { initWindowManager, openApp, closeWin } from `./engine/windowManager.js?v=${VERSION}`;
-import { initGestures } from `./engine/gestureEngine.js?v=${VERSION}`;
-import { initVoice } from `./engine/voiceEngine.js?v=${VERSION}`;
-import { initSnap } from `./engine/snapEngine.js?v=${VERSION}`;
-import { initDesktop, runBootSequence } from `./engine/desktopEngine.js?v=${VERSION}`;
-import { initWidgets } from `./engine/widgets.js?v=${VERSION}`;
-import { initTheme } from `./engine/themeEngine.js?v=${VERSION}`;
-import { initNotifications } from `./engine/notificationEngine.js?v=${VERSION}`;
-import { initBrowser } from `./engine/browserEngine.js?v=${VERSION}`;
+const VERSION = '1.0.7'; // Update this version to bust cache
 
 // Expose global functions for HTML (onclick handlers)
 window.openApp = openApp;
@@ -34,11 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
     initBrowser();
 
     // 3. Deferred High Cost Init (Gestures/Voice)
-    // Wait for boot to settle slightly
-    setTimeout(() => {
-        initGestures();
-        initVoice();
-        console.log("Gesture OS: All Systems Online");
-    }, 1500);
+    // Wait for MediaPipe scripts to fully load
+    window.addEventListener("load", () => {
+        console.log("🚀 MediaPipe scripts loaded, initializing gesture and voice engines...");
+
+        setTimeout(() => {
+            initGestures();
+            initVoice();
+            console.log("✅ Gesture OS: All Systems Online");
+        }, 500);
+    });
 
 });

@@ -27,7 +27,14 @@ const SEL = {
 
 /* ---- Main Init ---- */
 export function initVoice() {
-    console.log("🎤 Initializing Voice Engine...");
+    console.log("🎤 Voice Engine Loaded");
+
+    // Safety check: Ensure DOM is ready
+    if (!document.querySelector(SEL.TOGGLE_BTN) && !document.querySelector(SEL.TOGGLE_ROW)) {
+        console.warn("⚠️ Voice toggle elements not found, retrying in 500ms...");
+        setTimeout(initVoice, 500);
+        return;
+    }
 
     // 1. Restore State
     const saved = localStorage.getItem('pine_voice_enabled');
@@ -379,10 +386,13 @@ function insertNote(text) {
     ta.scrollTop = ta.scrollHeight; // Auto-scroll
 }
 
-/* ---- Toast Notification ---- */
+/* ---- Toast Notification (Fixed positioning for deployment) ---- */
 function showToast(msg) {
     const toast = document.querySelector(SEL.TOAST);
-    if (!toast) return;
+    if (!toast) {
+        console.warn("⚠️ Voice toast element not found");
+        return;
+    }
 
     toast.innerText = msg;
     toast.classList.add('show');

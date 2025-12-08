@@ -28,12 +28,23 @@ let isCamDragging = false;
 let camDragOffset = { x: 0, y: 0 };
 
 export function initGestures() {
-    if (!videoElement || !canvasElement) return;
+    console.log("🎮 Gesture Engine Loaded");
+
+    if (!videoElement || !canvasElement) {
+        console.error("❌ Camera or canvas element not found");
+        return;
+    }
 
     const canvasCtx = canvasElement.getContext("2d");
 
+    // Check if MediaPipe is loaded
+    if (typeof Hands === 'undefined') {
+        console.error("❌ MediaPipe Hands not loaded");
+        return;
+    }
+
     const hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
     });
 
     hands.setOptions({
@@ -50,18 +61,59 @@ export function initGestures() {
         onResults(results, canvasCtx);
     });
 
-    const camera = new Camera(videoElement, {
-        onFrame: async () => {
-            if (videoElement.videoWidth) {
-                await hands.send({ image: videoElement });
-            }
-        },
-        width: 640,
-        height: 480
-    });
-    camera.start();
+    // Try MediaPipe Camera first, with fallback
+    try {
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                if (videoElement.videoWidth) {
+                    await hands.send({ image: videoElement });
+                }
+            },
+            width: 640,
+            height: 480
+        });
+
+        camera.start().then(() => {
+            console.log("📹 Camera Started Correctly (MediaPipe)");
+        }).catch((err) => {
+            console.warn("⚠️ MediaPipe camera failed, trying fallback:", err);
+            startFallbackCamera(hands);
+        });
+    } catch (err) {
+        console.warn("⚠️ MediaPipe Camera not available, using fallback:", err);
+        startFallbackCamera(hands);
+    }
 
     initCameraButtons();
+}
+
+// Fallback camera using getUserMedia
+function startFallbackCamera(hands) {
+    navigator.mediaDevices.getUserMedia({
+        video: {
+            width: 640,
+            height: 480
+        }
+    })
+        .then((stream) => {
+            videoElement.srcObject = stream;
+            videoElement.play();
+
+            console.log("📹 Camera Started Correctly (Fallback)");
+
+            // Manual frame processing
+            const processFrame = async () => {
+                if (videoElement.videoWidth) {
+                    await hands.send({ image: videoElement });
+                }
+                requestAnimationFrame(processFrame);
+            };
+            processFrame();
+        })
+        .catch((err) => {
+            console.error("❌ Camera access failed:", err);
+            if (statusEl) statusEl.innerText = "CAMERA ERROR";
+        });
 }
 
 function onResults(results, canvasCtx) {
@@ -81,12 +133,12 @@ function onResults(results, canvasCtx) {
             drawLandmarks(canvasCtx, lm, { color: '#FF0000', lineWidth: 1 });
         }
 
-        // 1. Move Cursor
+        // 1. Move Cursor (using transform for better performance)
         const indexTip = lm[8];
         const pos = toScreenCoords(indexTip);
         if (cursorEl) {
-            cursorEl.style.left = pos.x + "px";
-            cursorEl.style.top = pos.y + "px";
+            // Use transform instead of left/top to avoid layout thrashing
+            cursorEl.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
         }
 
         // 2. Detect Pinch
@@ -102,7 +154,8 @@ function onResults(results, canvasCtx) {
         if (lm[20].y < lm[18].y) extended++;
         const isFist = (extended === 0);
 
-        // ---- NEW CAM LOGIC ----
+        // ---- CAMERA NAV DETECTION (Fixed for Cloudflare) ----
+        // Use more robust detection that accounts for potential layout shifts
         if (isCursorInCameraNav(pos.x, pos.y) || isCamDragging) {
             const nav = document.getElementById('camera-nav');
             if (nav) nav.style.opacity = 1;
@@ -229,12 +282,22 @@ function fakeRightClick(x, y) {
     if (el) el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: x, clientY: y }));
 }
 
-/* ---- Camera Overlay Logic ---- */
+/* ---- Camera Overlay Logic (Fixed for Cloudflare) ---- */
 function isCursorInCameraNav(x, y) {
     const nav = document.getElementById('camera-nav');
     if (!nav) return false;
+
+    // Force a layout recalculation to get accurate bounds
     const rect = nav.getBoundingClientRect();
-    return (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+
+    // Add a small buffer for easier interaction
+    const buffer = 5;
+    return (
+        x >= rect.left - buffer &&
+        x <= rect.right + buffer &&
+        y >= rect.top - buffer &&
+        y <= rect.bottom + buffer
+    );
 }
 
 function handleCameraInteraction(x, y, isPinching) {

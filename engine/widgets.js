@@ -144,34 +144,63 @@ function initCalculator() {
         const buttons = calcWin.querySelectorAll('button');
 
         let expression = '';
+        let lastWasOperator = false;
 
         buttons.forEach(btn => {
             btn.onclick = (e) => {
                 e.stopPropagation();
                 const val = btn.innerText;
+
                 if (val === 'C') {
                     expression = '';
                     display.innerText = '0';
+                    lastWasOperator = false;
                 } else if (val === '=') {
                     try {
-                        const safeExpr = expression.replace(/x/g, '*');
-                        if (safeExpr) {
+                        if (expression && !lastWasOperator) {
+                            // Evaluate the expression
                             // eslint-disable-next-line
-                            const result = new Function('return ' + safeExpr)();
+                            const result = new Function('return ' + expression)();
                             const final = parseFloat(result.toFixed(8));
                             display.innerText = final;
                             expression = String(final);
+                            lastWasOperator = false;
                         }
                     } catch (e) {
                         display.innerText = 'Error';
                         expression = '';
+                        lastWasOperator = false;
                     }
                 } else {
-                    if (display.innerText === 'Error') expression = '';
-                    expression += val;
+                    // Reset if there was an error
+                    if (display.innerText === 'Error') {
+                        expression = '';
+                        lastWasOperator = false;
+                    }
+
+                    // Check if it's an operator
+                    const isOperator = ['+', '-', '*', '/'].includes(val);
+
+                    // Prevent multiple consecutive operators
+                    if (isOperator && lastWasOperator) {
+                        // Replace the last operator with the new one
+                        expression = expression.slice(0, -1) + val;
+                    } else if (isOperator && expression === '') {
+                        // Don't allow starting with an operator (except minus for negative numbers)
+                        if (val === '-') {
+                            expression += val;
+                            lastWasOperator = true;
+                        }
+                        return;
+                    } else {
+                        expression += val;
+                        lastWasOperator = isOperator;
+                    }
+
                     display.innerText = expression;
                 }
             };
         });
     }, 500);
 }
+

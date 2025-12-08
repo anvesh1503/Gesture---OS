@@ -19,10 +19,7 @@
     --text-color: #000000;
     --border-color: rgba(0, 0, 0, 0.1);
     --hover-bg: rgba(0, 0, 0, 0.05);
-    /* Use a gradient or solid color if no light wallpaper provided, 
-       but we keep the nature one or override it. 
-       Let's override to a light gradient for distinctiveness if no image exists. */
-    --bg-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --bg-image: url('light_wallpaper.png');
 }
 
 /* Blue Theme */
@@ -34,7 +31,7 @@
     --text-color: #e2e8f0;
     --border-color: rgba(56, 189, 248, 0.2);
     --hover-bg: rgba(56, 189, 248, 0.1);
-    --bg-image: linear-gradient(to bottom, #0f172a, #1e293b);
+    --bg-image: url('blue_wallpaper.png');
 }
 
 body {

@@ -3,15 +3,17 @@
    Orchestrates Gesture OS initialization.
    ========================================================= */
 
-import { initWindowManager, openApp, closeWin } from './engine/windowManager.js';
-import { initGestures } from './engine/gestureEngine.js';
-import { initVoice } from './engine/voiceEngine.js';
-import { initSnap } from './engine/snapEngine.js';
-import { initDesktop, runBootSequence } from './engine/desktopEngine.js';
-import { initWidgets } from './engine/widgets.js';
-import { initTheme } from './engine/themeEngine.js';
-import { initNotifications } from './engine/notificationEngine.js';
-import { initBrowser } from './engine/browserEngine.js';
+const VERSION = '1.0.6'; // Update this version to bust cache
+
+import { initWindowManager, openApp, closeWin } from `./engine/windowManager.js?v=${VERSION}`;
+import { initGestures } from `./engine/gestureEngine.js?v=${VERSION}`;
+import { initVoice } from `./engine/voiceEngine.js?v=${VERSION}`;
+import { initSnap } from `./engine/snapEngine.js?v=${VERSION}`;
+import { initDesktop, runBootSequence } from `./engine/desktopEngine.js?v=${VERSION}`;
+import { initWidgets } from `./engine/widgets.js?v=${VERSION}`;
+import { initTheme } from `./engine/themeEngine.js?v=${VERSION}`;
+import { initNotifications } from `./engine/notificationEngine.js?v=${VERSION}`;
+import { initBrowser } from `./engine/browserEngine.js?v=${VERSION}`;
 
 // Expose global functions for HTML (onclick handlers)
 window.openApp = openApp;

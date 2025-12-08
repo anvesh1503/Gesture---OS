@@ -1,121 +1,177 @@
 /* =========================================================
-   VOICE ENGINE - ADVANCED
-   Handles Web Speech API integration, command parsing, 
-   and robust error handling.
+   VOICE ENGINE - ROBUST & PRODUCTION READY
+   Handles Web Speech API with continuous recognition,
+   smart restarting, and flexible natural language parsing.
    ========================================================= */
+
 import { openApp, closeWin, hideAllWins, focusWin } from './windowManager.js';
 import { showNotification } from './notificationEngine.js';
 import { navigateTo } from './browserEngine.js';
 
+/* ---- State Management ---- */
 let recognition = null;
 let isEnabled = false;
+let isRestarting = false;  // Prevent rapid-fire loops
+let recognitionStartedAt = 0;
 
+/* ---- Selectors (User Defined) ---- */
+const SEL = {
+    NOTEPAD_TEXTAREA: '#win-notepad textarea',
+    CALC_DISPLAY: '.calc-display',
+    CALC_BUTTONS: '.calc-grid button',
+    TOAST: '#voice-toast',
+    TOGGLE_BTN: '#voice-toggle',
+    TOGGLE_ROW: '#voice-setting-row',
+    STATUS_TEXT: '#voice-status'
+};
+
+/* ---- Main Init ---- */
 export function initVoice() {
-    setupVoiceToggle();
-    startVoiceSystem();
-}
+    console.log("🎤 Initializing Voice Engine...");
 
-function setupVoiceToggle() {
-    const toggle = document.getElementById('voice-toggle');
-    const row = document.getElementById('voice-setting-row');
+    // 1. Restore State
+    const saved = localStorage.getItem('pine_voice_enabled');
+    isEnabled = (saved === 'true');
 
-    // Load saved state
-    const savedState = localStorage.getItem('pine_voice_enabled');
-    isEnabled = savedState === 'true';
+    // 2. Setup UI Handlers
+    const toggleBtn = document.querySelector(SEL.TOGGLE_BTN);
+    const toggleRow = document.querySelector(SEL.TOGGLE_ROW); // Larger click area
 
-    updateUIState();
+    const toggleFn = (e) => {
+        e.stopPropagation(); // Avoid double bubbling
+        if (isEnabled) {
+            disableVoice();
+        } else {
+            enableVoice();
+        }
+    };
 
-    const target = row || toggle;
-    if (target) {
-        target.onclick = () => {
-            isEnabled = !isEnabled;
-            localStorage.setItem('pine_voice_enabled', isEnabled);
-            updateUIState();
+    if (toggleRow) toggleRow.onclick = toggleFn;
+    else if (toggleBtn) toggleBtn.onclick = toggleFn;
 
-            if (isEnabled) {
-                startVoiceSystem();
-                showToast("Voice Control Enabled");
-            } else {
-                stopVoiceSystem();
-                showToast("Voice Control Disabled");
-            }
-        };
+    // 3. Sync UI & Start if needed
+    updateUI();
+    if (isEnabled) {
+        startRecognition();
     }
 }
 
-function updateUIState() {
-    const toggle = document.getElementById('voice-toggle');
-    const status = document.getElementById('voice-status');
+/* ---- Core Controls ---- */
+function enableVoice() {
+    isEnabled = true;
+    localStorage.setItem('pine_voice_enabled', 'true');
+    updateUI();
+    showToast("Voice Control Enabled");
+    startRecognition();
+}
+
+function disableVoice() {
+    isEnabled = false;
+    localStorage.setItem('pine_voice_enabled', 'false');
+    updateUI();
+    showToast("Voice Control Disabled");
+    stopRecognition();
+}
+
+function updateUI() {
+    const btn = document.querySelector(SEL.TOGGLE_BTN);
+    const stat = document.querySelector(SEL.STATUS_TEXT);
 
     if (isEnabled) {
-        if (toggle) toggle.classList.add('active');
-        if (status) {
-            status.innerText = 'Listening...';
-            status.style.color = '#0f0'; // bright green
+        if (btn) btn.classList.add('active');
+        if (stat) {
+            stat.innerText = 'Listening...';
+            stat.style.color = '#00ff00';
+            stat.style.fontWeight = 'bold';
+        }
+        // Show Toast immediately so user knows
+        const toast = document.querySelector(SEL.TOAST);
+        if (toast && !toast.classList.contains('show')) {
+            toast.innerText = "Listening...";
+            toast.classList.add('show');
         }
     } else {
-        if (toggle) toggle.classList.remove('active');
-        if (status) {
-            status.innerText = 'Off';
-            status.style.color = '';
+        if (btn) btn.classList.remove('active');
+        if (stat) {
+            stat.innerText = 'Off';
+            stat.style.color = 'inherit';
+            stat.style.fontWeight = 'normal';
         }
+        const toast = document.querySelector(SEL.TOAST);
+        if (toast) toast.classList.remove('show');
     }
 }
 
-function startVoiceSystem() {
-    if (!isEnabled) return;
+/* ---- Speech Recognition Logic ---- */
+function startRecognition() {
+    // Safety: If already exists, don't double init
     if (recognition) {
-        // Already running or exists
-        try { recognition.start(); } catch (e) { /* ignore already started error */ }
+        try { recognition.start(); } catch (e) { /* ignore if already started */ }
         return;
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        console.error("Web Speech API not supported.");
-        showNotification("Voice Error", "Speech API not supported in this browser.", "error");
+        console.error("❌ Web Speech API not supported in this browser.");
+        showNotification("Voice Error", "Browser does not support Speech API", "error");
         return;
     }
 
     recognition = new SpeechRecognition();
-    recognition.continuous = true; // Keep listening
+    recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
 
     recognition.onstart = () => {
-        updateUIState();
+        console.log("🎤 Voice Recognition STARTED");
+        recognitionStartedAt = Date.now();
+        isRestarting = false;
+        updateUI();
     };
 
     recognition.onend = () => {
-        // Auto-restart if it was supposed to be enabled
+        console.log("🎤 Voice Recognition ENDED");
+        recognition = null; // Clear instance
+
+        // Auto-restart if we are still enabled
         if (isEnabled) {
-            console.log("Voice service stopped, restarting...");
-            setTimeout(() => {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.warn("Restart failed", e);
-                }
-            }, 1000);
+            const lifeTime = Date.now() - recognitionStartedAt;
+            // Prevention of rapid loop crashes: if it died instantly (<1s), wait a bit
+            const delay = (lifeTime < 1000) ? 1000 : 100;
+
+            if (!isRestarting) {
+                isRestarting = true;
+                setTimeout(() => {
+                    console.log("🔄 Auto-restarting voice...");
+                    startRecognition();
+                }, delay);
+            }
         } else {
-            updateUIState();
+            updateUI(); // Ensure UI reflects "Off"
         }
     };
 
     recognition.onerror = (event) => {
-        console.warn("Voice error:", event.error);
+        console.warn("⚠️ Voice Recognition Error:", event.error);
+
         if (event.error === 'not-allowed') {
-            isEnabled = false;
-            updateUIState();
-            showNotification("Permission Denied", "Microphone access blocked.", "error");
+            disableVoice(); // Hard stop if permission denied
+            showNotification("Microphone Blocked", "Please allow mic access.", "error");
+        } else if (event.error === 'no-speech') {
+            // Normal in silence, will trigger onend -> restart
+            return;
+        } else {
+            // Other errors (network, etc) -> show toast
+            showToast(`Error: ${event.error}`);
         }
     };
 
     recognition.onresult = (event) => {
+        // Process results
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                const transcript = event.results[i][0].transcript.trim();
-                processCommand(transcript);
+                let transcript = event.results[i][0].transcript.trim();
+                handlePhrase(transcript);
             }
         }
     };
@@ -123,228 +179,220 @@ function startVoiceSystem() {
     try {
         recognition.start();
     } catch (e) {
-        console.warn("Failed to start recognition:", e);
+        console.error("Failed to start recognition:", e);
     }
 }
 
-function stopVoiceSystem() {
+function stopRecognition() {
     if (recognition) {
         recognition.stop();
-        // We do NOT set recognition to null here because we might want to restart it later easily,
-        // but 'onend' logic handles the restart loop check via 'isEnabled'.
-        // Actually, let's null it to be clean.
         recognition = null;
     }
 }
 
-/* =========================================================
-   COMMAND PARSING
-   ========================================================= */
-
-function processCommand(rawText) {
+/* ---- Command Handling ---- */
+function handlePhrase(rawText) {
     const cmd = rawText.toLowerCase();
-    console.log("Voice Command:", cmd);
+    console.log(`🗣️ Heard: "${cmd}"`);
+    showToast("✓");
 
-    // Quick Feedback
-    showToast(rawText);
+    // 1. Global App Control
+    // Variations: open/launch/start
+    if (match(cmd, ['open', 'launch', 'start'], ['calculator'])) { openApp('calculator'); return; }
+    if (match(cmd, ['open', 'launch', 'start'], ['notepad'])) { openApp('notepad'); return; }
+    if (match(cmd, ['open', 'launch', 'start'], ['browser', 'internet', 'chrome'])) { openApp('browser'); return; }
+    if (match(cmd, ['open', 'launch', 'start'], ['settings', 'config'])) { openApp('settings'); return; }
 
-    // 1. App Navigation
-    if (cmd.includes('open calculator')) { openApp('calculator'); return; }
-    if (cmd.includes('close calculator')) { closeWin('win-calculator'); return; }
-    if (cmd.includes('open notepad')) { openApp('notepad'); return; }
-    if (cmd.includes('close notepad')) { closeWin('win-notepad'); return; }
-    if (cmd.includes('open setting')) { openApp('settings'); return; }
-    if (cmd.includes('close setting')) { closeWin('win-settings'); return; }
-    if (cmd.includes('open browser')) { openApp('browser'); return; }
-    if (cmd.includes('close browser')) { closeWin('win-browser'); return; }
+    // Variations: close/hide/exit
+    if (match(cmd, ['close', 'hide', 'exit', 'quit'], ['calculator'])) { closeWin('win-calculator'); return; }
+    if (match(cmd, ['close', 'hide', 'exit', 'quit'], ['notepad'])) { closeWin('win-notepad'); return; }
+    if (match(cmd, ['close', 'hide', 'exit', 'quit'], ['browser'])) { closeWin('win-browser'); return; }
+    if (match(cmd, ['close', 'hide', 'exit', 'quit'], ['settings'])) { closeWin('win-settings'); return; }
 
-    // 2. Focused App Context
-    if (handleCalculatorCommands(cmd)) return;
-    if (handleNotepadCommands(rawText)) return; // Pass rawText for correct case in typing
-
-    // 3. Fallback / Global
-    if (cmd === 'show desktop' || cmd === 'minimize all' || cmd === 'hide windows') {
+    if (cmd.includes('show desktop') || cmd.includes('minimize all')) {
         hideAllWins();
         return;
     }
+
+    // 2. Functionality
+    if (processCalculator(cmd)) return;
+    if (processNotepad(cmd, rawText)) return;
 }
 
-function handleCalculatorCommands(cmd) {
-    const calcWin = document.getElementById('win-calculator');
-    // If command looks like math, we might want to auto-open calc?
-    // User requested "Command like: 5 plus 9 equals"
-    // Let's checks simplistic patterns.
+// Helper: match any verb + any noun
+function match(text, verbs, nouns) {
+    return verbs.some(v => text.includes(v)) && nouns.some(n => text.includes(n));
+}
 
-    // Words to numbers map
-    const numMap = {
-        'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
-        'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'
-    };
-
-    // If it contains math keywords, assume it's for calculator
-    const mathKeywords = ['plus', 'minus', 'multiply', 'divide', 'divided', 'times', 'add', 'subtract', 'calculate', 'equal', 'equals', 'clear calculator'];
-    const hasMath = mathKeywords.some(k => cmd.includes(k)) || /\d/.test(cmd);
+/* ---- Calculator Logic ---- */
+function processCalculator(cmd) {
+    // Keywords allowing math
+    const mathKeys = [
+        'plus', 'add', 'minus', 'subtract', 'multiply', 'times', 'divide', 'over', 'equal', 'calculate',
+        'reset', 'clear calculator'
+    ];
+    // Also digit detection
+    const hasMath = mathKeys.some(k => cmd.includes(k)) || /\d/.test(cmd) || cmd.includes('zero') || cmd.includes('one');
 
     if (!hasMath) return false;
 
-    // Check availability
-    if (!calcWin || calcWin.style.display === 'none') {
-        // Optional: Open it if they say a math command? User didn't strictly specify, 
-        // but "set 8 divided by 2" implies it should probably act.
-        // Let's only act if it's open OR explicit commands.
-        // Actually, user said "Commands like: '5 plus 9 equals'". 
-        // I will auto-open calculator if it's closed for seamless exp.
+    // Check if we should auto-open
+    const calcWin = document.querySelector('#win-calculator');
+    const isOpen = (calcWin && calcWin.style.display !== 'none');
+
+    // Only auto-open if it sounds like a distinct math command or "clear calculator"
+    // (Avoid false positives on random numbers spoken)
+    const isDistinctMath = cmd.includes('plus') || cmd.includes('minus') || cmd.includes('times') || cmd.includes('divide') || cmd.includes('equal') || cmd.includes('clear calculator');
+
+    if (isDistinctMath && !isOpen) {
         openApp('calculator');
+    } else if (!isOpen) {
+        // If calculator is closed and we just said "5", ignore it.
+        return false;
     }
 
-    focusWin('win-calculator'); // Ensure it's active
-
+    // Is Calculator processing
     if (cmd.includes('clear calculator')) {
-        clickCalcButton('C');
+        clickCalc('C');
         return true;
     }
 
-    // Parse the string into a sequence of button presses
-    // "5 plus 9 equals" -> 5, +, 9, =
-    // "set 8 divided by 2" -> 8, /, 2
-
-    // Tokenize
+    // Map words to symbols
     const tokens = cmd.split(' ');
-    for (let token of tokens) {
-        token = token.trim();
-        // Map words to numbers/ops
-        let btnKey = null;
+    // Map: word -> button char
+    const map = {
+        'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
+        'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
+        'plus': '+', 'add': '+', 'added': '+',
+        'minus': '-', 'subtract': '-', 'less': '-',
+        'multiply': '*', 'multiplied': '*', 'times': '*', 'into': '*',
+        'divide': '/', 'divided': '/', 'over': '/', 'by': '/',
+        'equal': '=', 'equals': '=', 'calculate': '=', 'result': '=',
+        'point': '.', 'dot': '.'
+    };
 
-        if (numMap[token]) btnKey = numMap[token];
-        else if (!isNaN(token)) btnKey = token; // "5"
-        else if (token === 'plus' || token === 'add') btnKey = '+';
-        else if (token === 'minus' || token === 'subtract') btnKey = '-';
-        else if (token === 'multiply' || token === 'times') btnKey = '*';
-        else if (token === 'divide' || token === 'divided' || token === 'over') btnKey = '/';
-        else if (token === 'equal' || token === 'equals' || token === 'determine') btnKey = '=';
-        else if (token === 'point' || token === 'dot') btnKey = '.';
+    // Iterate and Click
+    for (let word of tokens) {
+        word = word.trim();
+        // Skip common filler words
+        if (['to', 'the', 'is', 'set'].includes(word)) continue;
 
-        if (btnKey) clickCalcButton(btnKey);
+        let char = map[word];
+        if (!char) {
+            // Is it a number? "10" -> "1", "0"
+            if (!isNaN(word)) {
+                // Split multi-digit? Calculator buttons are usually single digits but
+                // a standard calc usually expects sequential input: 1 then 2 for 12.
+                // Our grid has 0-9.
+                for (let digit of word) {
+                    clickCalc(digit);
+                }
+                continue;
+            }
+        }
+
+        if (char) {
+            clickCalc(char);
+        }
     }
     return true;
 }
 
-function clickCalcButton(char) {
-    // Find button in .calc-grid matching text
-    // Special handling for symbols vs text if needed, but existing HTML uses C, /, *, -, +, =
-    const container = document.querySelector('.calc-grid');
-    if (!container) return;
-
-    const buttons = Array.from(container.querySelectorAll('button'));
-    const btn = buttons.find(b => b.innerText === char);
-    if (btn) {
-        btn.click();
-
-        // Visual Feedback
-        btn.style.transition = '0.1s';
-        btn.style.transform = 'scale(0.9)';
-        btn.style.backgroundColor = 'var(--accent-color)';
-        setTimeout(() => {
-            btn.style.transform = 'scale(1)';
-            btn.style.backgroundColor = '';
-        }, 150);
+function clickCalc(char) {
+    const buttons = document.querySelectorAll(SEL.CALC_BUTTONS);
+    for (let btn of buttons) {
+        if (btn.innerText === char) {
+            console.log(`🧮 Clicking: ${char}`);
+            btn.click();
+            // Visual feedback
+            btn.classList.add('active-press'); // Requires CSS or inline
+            btn.style.transform = "scale(0.95)";
+            setTimeout(() => btn.style.transform = "", 150);
+            return;
+        }
     }
 }
 
-function handleNotepadCommands(rawText) {
-    const cmd = rawText.toLowerCase();
-    const notepadWin = document.getElementById('win-notepad');
+/* ---- Notepad Logic ---- */
+function processNotepad(cmd, rawText) {
+    const noteWin = document.querySelector('#win-notepad');
+    if (!noteWin || noteWin.style.display === 'none') return false;
 
-    // Commands specific to notepad manipulation
+    // Check if user specifically wants to "Type ..."
+    if (cmd.startsWith('type ') || cmd.startsWith('write ')) {
+        // Extract content. "type hello there" -> "hello there"
+        // Length of "type " is 5, "write " is 6
+        let content = "";
+        if (cmd.startsWith('type ')) content = rawText.substring(5);
+        else content = rawText.substring(6);
+
+        // Capitalize first letter of sentence if desired? 
+        // User asked for "insert text". We'll keep raw.
+        insertNote(content);
+        return true;
+    }
+
+    // Commands
+    if (cmd === 'new line' || cmd === 'enter') {
+        insertNote('\n');
+        return true;
+    }
     if (cmd === 'clear notepad') {
-        if (notepadWin) {
-            const ta = notepadWin.querySelector('textarea');
-            if (ta) ta.value = "";
+        const ta = document.querySelector(SEL.NOTEPAD_TEXTAREA);
+        if (ta) ta.value = '';
+        return true;
+    }
+    if (cmd === 'delete last word') {
+        const ta = document.querySelector(SEL.NOTEPAD_TEXTAREA);
+        if (ta) {
+            let val = ta.value.trimEnd();
+            let lastSpace = val.lastIndexOf(' ');
+            if (lastSpace >= 0) ta.value = val.substring(0, lastSpace);
+            else ta.value = "";
         }
         return true;
     }
 
-    // If notepad is NOT open, we shouldn't just "type" into void, 
-    // unless the command is explicit "type ..."
-    const isTyping = cmd.startsWith('type ');
-
-    if (isTyping || (notepadWin && notepadWin.style.display !== 'none')) {
-        if (notepadWin.style.display === 'none') openApp('notepad');
-
-        const textarea = notepadWin.querySelector('textarea');
-        if (!textarea) return false;
-
-        if (isTyping) {
-            // "type hello world" -> "hello world"
-            // remove first word "type" (case insensitive match of 'type ')
-            // We use rawText to preserve casing of the content
-            const content = rawText.substring(5); // "Type " length is 5
-            insertAtCursor(textarea, content);
-        } else {
-            // Dictation mode commands? 
-            if (cmd === 'new line' || cmd === 'enter') {
-                insertAtCursor(textarea, '\n');
-            } else if (cmd === 'delete last word') {
-                deleteLastWord(textarea);
-            } else {
-                // Just dictate? NOTE: User said "type <text>" is the command.
-                // But typically users expect open dictation if window is focused.
-                // I will stick to "type <text>" as proper command to avoid false positives,
-                // but if they said "new line" etc, we handle it.
-                // Let's also support loose dictation if it doesn't match other commands 
-                // AND notepad is explicitly the active focused window.
-                const isActive = notepadWin.classList.contains('active-focus');
-                if (isActive && !cmd.includes('open') && !cmd.includes('close')) {
-                    // CAREFUL: This might catch garbage. Use user rule strictly? 
-                    // User said: "type <text> should insert text".
-                    // I will strictly allow "type ..." only for safety, unless user wants loose dictation.
-                    // I'll add loose dictation for "delete last word" and "new line" only.
-                }
-            }
-        }
+    // Dictation Mode (Loose)
+    // Only if Notepad is the ACTIVE FOCUSED window
+    if (noteWin.classList.contains('active-focus')) {
+        // Avoid eating commands for other apps (unlikely since we checked them first)
+        // But also avoid accidental noise.
+        // User: "Dictation mode when notepad is focused"
+        insertNote(rawText);
         return true;
     }
+
     return false;
 }
 
-function insertAtCursor(textarea, text) {
-    // Standard insert at end
-    const val = textarea.value;
-    // Add space if needed
-    const needsSpace = val.length > 0 && !val.endsWith(' ') && !val.endsWith('\n') && !text.startsWith('\n');
-    textarea.value = val + (needsSpace ? ' ' : '') + text;
-    textarea.scrollTop = textarea.scrollHeight;
+function insertNote(text) {
+    const ta = document.querySelector(SEL.NOTEPAD_TEXTAREA);
+    if (!ta) return;
+
+    let val = ta.value;
+    // Auto-spacing: if not empty and not ending in newline, add space
+    if (val.length > 0 && !val.endsWith('\n') && !val.endsWith(' ') && text !== '\n') {
+        val += ' ';
+    }
+    ta.value = val + text;
+    ta.scrollTop = ta.scrollHeight; // Auto-scroll
 }
 
-function deleteLastWord(textarea) {
-    const text = textarea.value.trimEnd();
-    const lastSpace = text.lastIndexOf(' ');
-    if (lastSpace !== -1) {
-        textarea.value = text.substring(0, lastSpace);
-    } else {
-        textarea.value = ""; // No spaces, clear all
-    }
-}
+/* ---- Toast Notification ---- */
+function showToast(msg) {
+    const toast = document.querySelector(SEL.TOAST);
+    if (!toast) return;
 
-/* =========================================================
-   UI HELPERS (Toast)
-   ========================================================= */
-
-function showToast(message) {
-    let toast = document.getElementById('voice-toast');
-    if (!toast) {
-        // Create if missing (failsafe)
-        toast = document.createElement('div');
-        toast.id = 'voice-toast';
-        document.body.appendChild(toast);
-    }
-
-    toast.innerText = message;
+    toast.innerText = msg;
     toast.classList.add('show');
 
-    // Hide after 3s
-    if (toast.timeout) clearTimeout(toast.timeout);
-    toast.timeout = setTimeout(() => {
+    // Clear previous timeout if any
+    if (toast.dataset.timer) clearTimeout(parseInt(toast.dataset.timer));
+
+    const tid = setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
+
+    toast.dataset.timer = tid;
 }

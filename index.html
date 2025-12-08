@@ -119,8 +119,17 @@
                     <div class="control-btn close">✕</div>
                 </div>
             </div>
-            <div class="window-content" style="padding: 0; overflow: hidden;">
-                <iframe src="pine browser/index.html" style="width: 100%; height: 100%; border: none;"></iframe>
+            <div class="window-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                <div class="browser-toolbar">
+                    <div class="browser-controls">
+                        <div class="browser-btn" id="btn-browser-back" title="Back">←</div>
+                        <div class="browser-btn" id="btn-browser-reload" title="Reload">↻</div>
+                    </div>
+                    <input type="text" id="browser-url" placeholder="Search or type URL" autocomplete="off" />
+                    <div class="browser-btn" id="btn-browser-go" title="Go">Go</div>
+                </div>
+                <iframe id="browser-frame" src="pine browser/index.html"
+                    style="width: 100%; flex: 1; border: none;"></iframe>
             </div>
         </div>
 

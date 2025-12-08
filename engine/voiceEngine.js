@@ -4,15 +4,13 @@
    ========================================================= */
 import { openApp, closeWin, hideAllWins, focusWin } from './windowManager.js';
 import { showNotification } from './notificationEngine.js';
+import { navigateTo } from './browserEngine.js';
 
 export function initVoice() {
     const toggle = document.getElementById('voice-toggle');
     const status = document.getElementById('voice-status');
     let recognition = null;
     let isEnabled = localStorage.getItem('pine_voice_enabled') === 'true';
-
-    // REMOVED: Local Toast Setup (Replaced by Notification Engine)
-    // We now use showNotification()
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -129,11 +127,23 @@ export function initVoice() {
                 const rawTranscript = event.results[0][0].transcript.trim();
                 const cleanCmd = rawTranscript.toLowerCase();
 
+                // 1. Search Handler
+                if (cleanCmd.startsWith('search for ')) {
+                    const query = rawTranscript.substring(11).trim(); // Remove "search for "
+                    if (query) {
+                        openApp('browser');
+                        navigateTo(query);
+                        showNotification('Voice Search', `Searching for "${query}"`, 'success');
+                        return;
+                    }
+                }
+
+                // 2. Notepad Dictation
                 const notepadWin = document.getElementById('win-notepad');
                 if (notepadWin && notepadWin.classList.contains('active-focus') && notepadWin.style.display !== 'none') {
                     if (cleanCmd.includes('close notepad')) {
                         showNotification('Voice', 'Closing Notepad', 'info');
-                        commands['close notepad']();
+                        closeWin('win-notepad');
                         return;
                     }
                     insertTextIntoNotepad(rawTranscript);
@@ -141,6 +151,7 @@ export function initVoice() {
                     return;
                 }
 
+                // 3. Command Matching
                 let matched = false;
                 for (const [cmd, action] of Object.entries(commands)) {
                     if (cleanCmd.includes(cmd)) {

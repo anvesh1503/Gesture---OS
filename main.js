@@ -11,6 +11,7 @@ import { initDesktop, runBootSequence } from './engine/desktopEngine.js';
 import { initWidgets } from './engine/widgets.js';
 import { initTheme } from './engine/themeEngine.js';
 import { initNotifications } from './engine/notificationEngine.js';
+import { initBrowser } from './engine/browserEngine.js';
 
 // Expose global functions for HTML (onclick handlers)
 window.openApp = openApp;
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDesktop();
     initWidgets();
     initNotifications();
+    initBrowser();
 
     // 3. Deferred High Cost Init (Gestures/Voice)
     // Wait for boot to settle slightly

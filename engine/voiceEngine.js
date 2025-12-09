@@ -59,7 +59,7 @@ export function initVoice() {
     // 3. Sync UI & Start if needed
     updateUI();
     if (isEnabled) {
-        startRecognition();
+        startRecognition(); // Start immediately, no delay
     }
 }
 
@@ -69,7 +69,7 @@ function enableVoice() {
     localStorage.setItem('pine_voice_enabled', 'true');
     updateUI();
     showToast("Voice Control Enabled");
-    startRecognition();
+    startRecognition(); // Start immediately, no delay
 }
 
 function disableVoice() {
@@ -91,11 +91,11 @@ function updateUI() {
             stat.style.color = '#00ff00';
             stat.style.fontWeight = 'bold';
         }
-        // Show Toast immediately so user knows
+        // Show Toast instantly - no delays
         const toast = document.querySelector(SEL.TOAST);
         if (toast && !toast.classList.contains('show')) {
-            toast.innerText = "Listening...";
             toast.classList.add('show');
+            toast.innerText = "Listening...";
         }
     } else {
         if (btn) btn.classList.remove('active');
@@ -133,6 +133,12 @@ function startRecognition() {
         console.log("🎤 Voice Recognition STARTED");
         recognitionStartedAt = Date.now();
         isRestarting = false;
+        // Instant UI feedback
+        const toast = document.querySelector(SEL.TOAST);
+        if (toast) {
+            toast.classList.add('show');
+            toast.innerText = "Listening...";
+        }
         updateUI();
     };
 
@@ -142,9 +148,8 @@ function startRecognition() {
 
         // Auto-restart if we are still enabled
         if (isEnabled) {
-            const lifeTime = Date.now() - recognitionStartedAt;
-            // Prevention of rapid loop crashes: if it died instantly (<1s), wait a bit
-            const delay = (lifeTime < 1000) ? 1000 : 100;
+            // Fast restart for better responsiveness
+            const delay = 100;
 
             if (!isRestarting) {
                 isRestarting = true;
@@ -174,12 +179,17 @@ function startRecognition() {
     };
 
     recognition.onresult = (event) => {
-        // Process results
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                let transcript = event.results[i][0].transcript.trim();
-                handlePhrase(transcript);
+        // Fast processing - only handle final results immediately
+        const result = event.results[event.results.length - 1];
+        if (result.isFinal) {
+            const transcript = result[0].transcript.trim();
+            // Instant UI feedback
+            const toast = document.querySelector(SEL.TOAST);
+            if (toast) {
+                toast.classList.add('show');
+                toast.innerText = "Processing...";
             }
+            handlePhrase(transcript);
         }
     };
 

@@ -27,6 +27,10 @@ let lastFrameTime = 0;
 let isCamDragging = false;
 let camDragOffset = { x: 0, y: 0 };
 
+// Cursor Smoothing
+let smoothX = 0;
+let smoothY = 0;
+
 export function initGestures() {
     console.log("🎮 Gesture Engine Loaded");
 
@@ -133,12 +137,14 @@ function onResults(results, canvasCtx) {
             drawLandmarks(canvasCtx, lm, { color: '#FF0000', lineWidth: 1 });
         }
 
-        // 1. Move Cursor (using transform for better performance)
+        // 1. Move Cursor (with smoothing)
         const indexTip = lm[8];
         const pos = toScreenCoords(indexTip);
         if (cursorEl) {
-            // Use transform instead of left/top to avoid layout thrashing
-            cursorEl.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+            // Apply exponential smoothing filter
+            smoothX = smoothX * 0.75 + pos.x * 0.25;
+            smoothY = smoothY * 0.75 + pos.y * 0.25;
+            cursorEl.style.transform = `translate(${smoothX}px, ${smoothY}px)`;
         }
 
         // 2. Detect Pinch

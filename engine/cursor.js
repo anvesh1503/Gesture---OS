@@ -24,19 +24,23 @@ export function initCursor() {
         return;
     }
 
-    // Set initial position to center or off-screen
+    // Set initial position to center
     currentX = window.innerWidth / 2;
     currentY = window.innerHeight / 2;
     targetX = currentX;
     targetY = currentY;
 
+    // Make cursor fully visible and opaque
+    cursorEl.style.opacity = "1";
+    cursorEl.style.display = "block";
+
     // Start the animation loop
     requestAnimationFrame(loop);
-    console.log("🖱️ Cursor Engine Initialized");
+    console.log("🖱️ Cursor Engine Initialized - Fully Visible");
 }
 
 export function updateCursor(x, y) {
-    if (isNaN(x) || isNaN(y)) return;
+    if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) return;
     targetX = x;
     targetY = y;
     isMoving = true;
@@ -73,7 +77,9 @@ function loop() {
             currentY = targetY;
         }
 
-        cursorEl.style.transform = `translate(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px)`;
+        // Apply position using left/top (CSS handles centering via transform)
+        cursorEl.style.left = `${currentX.toFixed(2)}px`;
+        cursorEl.style.top = `${currentY.toFixed(2)}px`;
     }
 
     requestAnimationFrame(loop);

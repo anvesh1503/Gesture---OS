@@ -37,16 +37,32 @@ export function initWidgets() {
         return widget;
     }
 
-    const clockWidget = createWidget('widget-clock', clockHTML, window.innerWidth - 160, 20);
-    const calendarWidget = createWidget('widget-calendar', calendarHTML, window.innerWidth - 220, 110);
+    const clockWidget = createWidget('widget-clock', clockHTML, window.innerWidth - 180, 20);
+    const calendarWidget = createWidget('widget-calendar', calendarHTML, window.innerWidth - 240, 100);
 
     // Clock Logic
     function updateClock() {
         const now = new Date();
         const timeEl = clockWidget.querySelector('.clock-time');
         const dateEl = clockWidget.querySelector('.clock-date');
-        if (timeEl) timeEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        if (dateEl) dateEl.innerText = now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+
+        if (timeEl) {
+            // Use 12-hour format with AM/PM
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const hour12 = hours % 12 || 12;
+            const minuteStr = minutes.toString().padStart(2, '0');
+            timeEl.innerText = `${hour12}:${minuteStr} ${ampm}`;
+        }
+
+        if (dateEl) {
+            dateEl.innerText = now.toLocaleDateString('en-US', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+            });
+        }
     }
     setInterval(updateClock, 1000);
     updateClock();
@@ -91,6 +107,22 @@ export function initWidgets() {
         }
     }
     renderCalendar();
+
+    // Taskbar Clock Update
+    function updateTaskbarClock() {
+        const taskbarClock = document.getElementById('clock-taskbar');
+        if (taskbarClock) {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const hour12 = hours % 12 || 12;
+            const minuteStr = minutes.toString().padStart(2, '0');
+            taskbarClock.innerText = `${hour12}:${minuteStr} ${ampm}`;
+        }
+    }
+    setInterval(updateTaskbarClock, 1000);
+    updateTaskbarClock();
 
     // Widget Dragging
     let zIndex = 100;

@@ -39,7 +39,8 @@ export function runBootSequence() {
         }, 300);
     };
 
-    setTimeout(cleanup, 3500);
+    // Reduced timeout for faster boot (from 3500 to 1200)
+    setTimeout(cleanup, 1200);
     document.addEventListener('keydown', cleanup);
     document.addEventListener('pointerdown', cleanup);
 }
@@ -67,6 +68,12 @@ export function initDesktop() {
     });
 
     initVirtualDesktops();
+
+    // UI is ready
+    if (window.OS_FLAGS) {
+        window.OS_FLAGS.ui = true;
+        window.checkOSReady();
+    }
 }
 
 export function toggleStartMenu() {

@@ -281,17 +281,81 @@ function stopRecognition() {
    COMMAND HANDLING
    ======================================== */
 function handlePhrase(rawText) {
-    const cmd = rawText.toLowerCase();
+    const cmd = rawText.toLowerCase().trim();
 
-    // Simple commands for robustness
-    if (cmd.includes('open calculator') || cmd.includes('calculator')) openApp('calculator');
-    if (cmd.includes('open notepad') || cmd.includes('notepad')) openApp('notepad');
-    if (cmd.includes('open browser') || cmd.includes('browser')) openApp('browser');
-    if (cmd.includes('open settings')) openApp('settings');
+    if (handleCalculatorCommand(cmd)) return;
+
+    if (cmd.includes('open calculator') || cmd === 'calculator') openApp('calculator');
+    if (cmd.includes('open notepad') || cmd === 'notepad') openApp('notepad');
+    if (cmd.includes('open browser') || cmd === 'browser') openApp('browser');
+    if (cmd.includes('open settings') || cmd === 'settings') openApp('settings');
 
     if (cmd.includes('close calculator')) closeWin('win-calculator');
     if (cmd.includes('close notepad')) closeWin('win-notepad');
     if (cmd.includes('close browser')) closeWin('win-browser');
 
     if (cmd.includes('show desktop')) hideAllWins();
+}
+
+function handleCalculatorCommand(cmd) {
+    const calcWin = document.getElementById('win-calculator');
+    if (!calcWin || calcWin.style.display === 'none') return false;
+
+    const numberMap = {
+        'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
+        'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
+        '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
+        '5': '5', '6': '6', '7': '7', '8': '8', '9': '9'
+    };
+
+    const operatorMap = {
+        'plus': 'add', 'add': 'add',
+        'minus': 'subtract', 'subtract': 'subtract',
+        'times': 'multiply', 'multiply': 'multiply',
+        'divide': 'divide', 'divided by': 'divide', 'over': 'divide',
+        'division': 'divide', 'multiplication': 'multiply'
+    };
+
+    for (const [word, num] of Object.entries(numberMap)) {
+        if (cmd === word || cmd === `press ${word}` || cmd === `number ${word}` || cmd === `digit ${word}`) {
+            clickButton(`btn-${num}`);
+            return true;
+        }
+    }
+
+    for (const [word, op] of Object.entries(operatorMap)) {
+        if (cmd === word || cmd.includes(word)) {
+            clickButton(`btn-${op}`);
+            return true;
+        }
+    }
+
+    if (cmd === 'clear' || cmd === 'reset' || cmd === 'delete' || cmd === 'backspace') {
+        clickButton('btn-clear');
+        return true;
+    }
+
+    if (cmd === 'equals' || cmd === 'equal' || cmd === 'equal to' || cmd === 'calculate') {
+        clickButton('btn-equals');
+        return true;
+    }
+
+    return false;
+}
+
+function clickButton(buttonId) {
+    const btn = document.getElementById(buttonId);
+    if (btn) {
+        btn.click();
+        console.log(`Voice command triggered: ${buttonId}`);
+
+        const toast = document.querySelector('#voice-toast');
+        if (toast) {
+            toast.innerText = `Pressed: ${btn.innerText}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1000);
+        }
+    } else {
+        console.warn(`Button not found: ${buttonId}`);
+    }
 }

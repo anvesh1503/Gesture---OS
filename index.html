@@ -63,24 +63,24 @@
             </div>
         </div>
         <div class="window-content">
-            <input type="text" class="calc-display" value="0" readonly>
+            <input type="text" class="calc-display" id="calc-display" value="0" readonly>
             <div class="calc-grid">
-                <button class="calc-btn">7</button>
-                <button class="calc-btn">8</button>
-                <button class="calc-btn">9</button>
-                <button class="calc-btn op">/</button>
-                <button class="calc-btn">4</button>
-                <button class="calc-btn">5</button>
-                <button class="calc-btn">6</button>
-                <button class="calc-btn op">*</button>
-                <button class="calc-btn">1</button>
-                <button class="calc-btn">2</button>
-                <button class="calc-btn">3</button>
-                <button class="calc-btn op">-</button>
-                <button class="calc-btn">0</button>
-                <button class="calc-btn">C</button>
-                <button class="calc-btn eq">=</button>
-                <button class="calc-btn op">+</button>
+                <button class="calc-btn" id="btn-7">7</button>
+                <button class="calc-btn" id="btn-8">8</button>
+                <button class="calc-btn" id="btn-9">9</button>
+                <button class="calc-btn op" id="btn-divide">/</button>
+                <button class="calc-btn" id="btn-4">4</button>
+                <button class="calc-btn" id="btn-5">5</button>
+                <button class="calc-btn" id="btn-6">6</button>
+                <button class="calc-btn op" id="btn-multiply">*</button>
+                <button class="calc-btn" id="btn-1">1</button>
+                <button class="calc-btn" id="btn-2">2</button>
+                <button class="calc-btn" id="btn-3">3</button>
+                <button class="calc-btn op" id="btn-subtract">-</button>
+                <button class="calc-btn" id="btn-0">0</button>
+                <button class="calc-btn" id="btn-clear">C</button>
+                <button class="calc-btn eq" id="btn-equals">=</button>
+                <button class="calc-btn op" id="btn-add">+</button>
             </div>
         </div>
     </div>
@@ -112,18 +112,14 @@
         </div>
         <div class="window-content">
             <div class="browser-bar">
-                <button class="browser-nav-btn" id="browser-back"><i class="fa-solid fa-arrow-left"></i></button>
-                <button class="browser-nav-btn" id="browser-reload"><i class="fa-solid fa-rotate-right"></i></button>
+                <button class="browser-nav-btn" id="btn-browser-back"><i class="fa-solid fa-arrow-left"></i></button>
+                <button class="browser-nav-btn" id="btn-browser-reload"><i class="fa-solid fa-rotate-right"></i></button>
                 <div class="url-bar">
-                    <input type="text" class="url-input" placeholder="Enter URL or search..." value="about:blank">
+                    <input type="text" id="browser-url" class="url-input" placeholder="Enter URL or search..." value="about:blank">
+                    <button id="btn-browser-go" style="background: transparent; border: none; color: var(--accent); cursor: pointer; padding: 0 10px; font-size: 18px; font-weight: bold;">→</button>
                 </div>
             </div>
-            <div class="browser-content" id="browser-frame">
-                <div style="padding: 40px; text-align: center; color: #999;">
-                    <i class="fa-solid fa-compass" style="font-size: 64px; margin-bottom: 20px; color: #00d2d3;"></i>
-                    <p>Enter a URL or search term above</p>
-                </div>
-            </div>
+            <iframe id="browser-frame" class="browser-content" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" src="about:blank"></iframe>
         </div>
     </div>
 

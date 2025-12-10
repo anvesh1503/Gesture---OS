@@ -4,10 +4,11 @@
    ⚡ Optimized for <200ms latency, 60 FPS, reduced CPU usage
    ========================================================= */
 import { bringToFront } from './windowManager.js';
+import { updateCursor, setCursorState } from './cursor.js';
 
 const videoElement = document.getElementById("camera");
 const canvasElement = document.getElementById("output_canvas");
-const cursorEl = document.getElementById("custom-cursor");
+// cursorEl is now managed by cursor.js, preventing conflict
 const statusEl = document.getElementById("gesture-status");
 
 /* ---- Config ---- */
@@ -31,10 +32,6 @@ let lastPinchStartTime = 0;
 // Camera Box State
 let isCamDragging = false;
 let camDragOffset = { x: 0, y: 0 };
-
-// Cursor Smoothing
-let smoothX = 0;
-let smoothY = 0;
 
 /* ---- Performance Monitoring ---- */
 let frameCount = 0;
@@ -217,15 +214,12 @@ function onResults(results, canvasCtx) {
         drawLandmarks(canvasCtx, lm, { color: '#FF0000', lineWidth: 1 });
     }
 
-    // 1. Move Cursor (with smoothing) - OPTIMIZED
+    // 1. Move Cursor (via Cursor Module)
     const indexTip = lm[8];
     const pos = toScreenCoords(indexTip);
-    if (cursorEl) {
-        // Apply exponential smoothing filter
-        smoothX = smoothX * 0.75 + pos.x * 0.25;
-        smoothY = smoothY * 0.75 + pos.y * 0.25;
-        cursorEl.style.transform = `translate(${smoothX}px, ${smoothY}px)`;
-    }
+
+    // Send raw coordinates to cursor engine for smoothing
+    updateCursor(pos.x, pos.y);
 
     // 2. Detect Pinch - OPTIMIZED (cache calculation)
     const thumbTip = lm[4];
@@ -250,7 +244,7 @@ function onResults(results, canvasCtx) {
 
         handleCameraInteraction(pos.x, pos.y, isPinching);
 
-        cursorEl.classList.add("active");
+        setCursorState("active");
         if (!isCamDragging) statusEl.innerText = "CAM CONTROLS";
 
     } else {
@@ -263,7 +257,7 @@ function onResults(results, canvasCtx) {
 
         if (isFist) {
             statusEl.innerText = "FIST (Right Click)";
-            cursorEl.classList.add("fist");
+            setCursorState("fist");
             const now = Date.now();
             if (now - lastFistTime > FIST_DEBOUNCE_MS) {
                 lastFistTime = now;
@@ -272,8 +266,7 @@ function onResults(results, canvasCtx) {
             }
         } else if (isPinching) {
             statusEl.innerText = "PINCH (Click/Drag)";
-            cursorEl.classList.add("active");
-            cursorEl.classList.remove("fist");
+            setCursorState("pinch");
 
             if (!wasPinching) {
                 // Start Pinch - with debounce
@@ -304,8 +297,7 @@ function onResults(results, canvasCtx) {
 
         } else {
 
-            cursorEl.classList.remove("active");
-            cursorEl.classList.remove("fist");
+            setCursorState("normal");
 
             if (wasPinching) {
                 // Release Pinch

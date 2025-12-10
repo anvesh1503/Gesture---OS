@@ -9,9 +9,10 @@ import { initVoice } from "./engine/voiceEngine.js";
 import { initSnap } from "./engine/snapEngine.js";
 import { initDesktop, runBootSequence } from "./engine/desktopEngine.js";
 import { initWidgets } from "./engine/widgets.js";
-import { initTheme } from "./engine/themeEngine.js";
+import { initThemes } from "./engine/themeEngine.js";
 import { initNotifications } from "./engine/notificationEngine.js";
 import { initBrowser } from "./engine/browserEngine.js";
+import { initCursor } from "./engine/cursor.js";
 
 const VERSION = '1.0.7'; // Update this version to bust cache
 
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initWidgets();
     initNotifications();
     initBrowser();
+    initCursor();
 
     // 3. Deferred High Cost Init (Gestures/Voice)
     // Wait for MediaPipe scripts to fully load

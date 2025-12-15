@@ -29,6 +29,7 @@ let previousGesture = 'IDLE';
 let gestureFrameCount = 0;
 const GESTURE_DEBOUNCE_FRAMES = 3; // Require 3 consecutive frames to confirm gesture change
 let firstHandDetected = false;
+let fistLocked = false; // Prevent repeated closes
 
 // Frame history for swipe detection
 const frameHistory = [];
@@ -382,6 +383,32 @@ function onResults(results) {
 
             // Update status
             statusEl.innerText = detectedGesture !== 'IDLE' ? detectedGesture : "ACTIVE";
+
+            // 4. FIST ACTION: Close Window OR Close Assistant
+            if (currentGesture === 'FIST' && !fistLocked) {
+                // Check if hovering over Assistant Header
+                const ms = document.elementFromPoint(x, y); // Use latest cursor x,y
+                if (ms) console.log("👊 Fist Hit Test:", ms.tagName, ms.className, ms.id);
+
+                const assistantHeader = ms ? ms.closest('.ai-header') : null;
+
+                if (assistantHeader) {
+                    console.log("👊 Fist Action: Closing AI Assistant (Hit Header)");
+                    const panel = document.getElementById('ai-assistant-panel');
+                    if (panel) panel.style.display = 'none';
+                    fistLocked = true;
+                } else {
+                    // Standard Window Closing Logic
+                    const activeWin = document.querySelector('.window.active-focus');
+                    if (activeWin && activeWin.style.display !== 'none') {
+                        console.log(`👊 Fist Action: Closing ${activeWin.id}`);
+                        activeWin.style.display = 'none';
+                        fistLocked = true;
+                    }
+                }
+            } else if (currentGesture !== 'FIST') {
+                fistLocked = false; // Reset lock on release
+            }
         } else {
             // Pinching - override gesture state
             currentGesture = 'PINCH';

@@ -13,6 +13,7 @@
 import { openApp, closeWin, hideAllWins, focusWin } from './windowManager.js';
 import { showNotification } from './notificationEngine.js';
 import { navigateTo } from './browserEngine.js';
+import { toggleAssistant, askAI, setAssistantListening } from './aiAssistant.js';
 
 /* ========================================
    STATE MANAGEMENT
@@ -25,6 +26,7 @@ let micPermissionGranted = false;
 let restartAttempts = 0;
 let lastErrorTime = 0;
 let consecutiveErrors = 0;
+let assistantListeningMode = false; // New state for Q&A
 
 // Configuration
 const CONFIG = {
@@ -138,30 +140,43 @@ function setupUIHandlers() {
 /* ========================================
    MICROPHONE PERMISSION
    ======================================== */
+/* ========================================
+   MICROPHONE PERMISSION & START
+   ======================================== */
 async function requestMicrophonePermission() {
-    console.log("🎤 [VOICE ENGINE] Requesting Mic Permission...");
+    console.log("🎤 [VOICE ENGINE] Requesting Access...");
+    let directStreamSuccess = false;
 
+    // Method A: Explicit getUserMedia (Standard)
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Permission granted - stop the stream immediately
+        // Success - we have permission. Stop stream to release mic for SpeechRecognition
         stream.getTracks().forEach(track => track.stop());
-
+        directStreamSuccess = true;
         micPermissionGranted = true;
-        console.log("✅ [VOICE ENGINE] Microphone permission GRANTED");
-
-        startRecognition();
+        console.log("✅ [VOICE ENGINE] Explicit mic permission GRANTED");
 
     } catch (error) {
-        console.error("❌ [VOICE ENGINE] Microphone permission DENIED or error", error);
+        console.warn("⚠️ [VOICE ENGINE] Explicit mic check failed (likely file:// or blocked)", error);
+        // Do NOT disable yet. Try Method B.
+    }
 
-        isEnabled = false;
-        localStorage.setItem('pine_voice_enabled', 'false');
-        updateUI();
+    // Method B: Direct SpeechRecognition Start (Fallback)
+    // Some browsers/environments allow this even if getUserMedia fails context checks
+    console.log("🎤 [VOICE ENGINE] Attempting Recognition Start (Fallback or Cont...)");
+    startRecognition();
+}
 
-        if (document.querySelector('#voice-toast')) {
-            document.querySelector('#voice-toast').innerText = "❌ Mic Permission Denied";
-            document.querySelector('#voice-toast').classList.add('show');
-        }
+function handleStartError(error) {
+    // Called if Recognition fails to start 'not-allowed'
+    console.error("❌ [VOICE ENGINE] Final Start Failure:", error);
+    isEnabled = false;
+    localStorage.setItem('pine_voice_enabled', 'false');
+    updateUI();
+
+    if (document.querySelector('#voice-toast')) {
+        document.querySelector('#voice-toast').innerText = "❌ Voice Access Blocked";
+        document.querySelector('#voice-toast').classList.add('show');
     }
 }
 
@@ -253,6 +268,11 @@ function startRecognition() {
 
         recognition.onerror = (event) => {
             console.warn(`⚠️ [VOICE ENGINE] Recognition ERROR: ${event.error}`);
+
+            // If strictly denied, trigger full disable
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                handleStartError(event.error);
+            }
         };
 
         recognition.onresult = (event) => {
@@ -265,6 +285,7 @@ function startRecognition() {
 
     } catch (error) {
         console.error("❌ [VOICE ENGINE] Failed to start:", error);
+        handleStartError(error);
     }
 }
 
@@ -282,6 +303,7 @@ function stopRecognition() {
    ======================================== */
 function handlePhrase(rawText) {
     const cmd = rawText.toLowerCase().trim();
+<<<<<<< HEAD
 
     if (handleCalculatorCommand(cmd)) return;
 
@@ -289,6 +311,39 @@ function handlePhrase(rawText) {
     if (cmd.includes('open notepad') || cmd === 'notepad') openApp('notepad');
     if (cmd.includes('open browser') || cmd === 'browser') openApp('browser');
     if (cmd.includes('open settings') || cmd === 'settings') openApp('settings');
+=======
+    console.log(`🗣️ Process Command: "${cmd}"`);
+
+    // 1. ASSISTANT INTERACTIVE MODE (Priority)
+    if (assistantListeningMode) {
+        askAI(rawText); // Send the spoken text as a question
+        assistantListeningMode = false; // Reset mode
+        setAssistantListening(false); // Update UI
+        return;
+    }
+
+    // 2. ASSISTANT COMMANDS
+    if (cmd.includes('open assistant')) {
+        toggleAssistant(true);
+        return;
+    }
+    if (cmd.includes('close assistant')) {
+        toggleAssistant(false);
+        return;
+    }
+    if (cmd.includes('ask assistant')) {
+        assistantListeningMode = true;
+        setAssistantListening(true); // Show "Listening..." UI
+        console.log("🎤 Assistant entering listening mode...");
+        return;
+    }
+
+    // 3. SYSTEM COMMANDS (Fallback)
+    if (cmd.includes('open calculator') || cmd.includes('calculator')) openApp('calculator');
+    if (cmd.includes('open notepad') || cmd.includes('notepad')) openApp('notepad');
+    if (cmd.includes('open browser') || cmd.includes('browser')) openApp('browser');
+    if (cmd.includes('open settings')) openApp('settings');
+>>>>>>> 4d1606c (feat: Add AI Assistant with Voice Control, Chat, and Real AI integration; Refine UI and Gestures)
 
     if (cmd.includes('close calculator')) closeWin('win-calculator');
     if (cmd.includes('close notepad')) closeWin('win-notepad');

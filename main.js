@@ -13,6 +13,7 @@ import { initTheme } from "./engine/themeEngine.js";
 import { initNotifications } from "./engine/notificationEngine.js";
 import { initBrowser } from "./engine/browserEngine.js";
 import { initCursor } from "./engine/cursor.js";
+import { initAssistant } from "./engine/aiAssistant.js";
 
 console.log("🚀 Main.js Loaded");
 
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initNotifications();
     initBrowser();
     initCursor();
+    initAssistant();
 
 
     // 3. Start Core Engines IMMEDIATELY (No artificial delays)

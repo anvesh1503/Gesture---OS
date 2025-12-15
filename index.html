@@ -36,7 +36,8 @@
             <span>Notepad</span>
         </div>
         <div class="desktop-icon" data-app="browser">
-            <img src="https://cdn-icons-png.flaticon.com/512/2111/2111370.png" alt="Browser">
+            <!-- Replaced Image with Modern Icon -->
+            <i class="fa-solid fa-globe"></i>
             <span>Browser</span>
         </div>
         <div class="desktop-icon" data-app="settings">
@@ -113,13 +114,23 @@
         <div class="window-content">
             <div class="browser-bar">
                 <button class="browser-nav-btn" id="btn-browser-back"><i class="fa-solid fa-arrow-left"></i></button>
-                <button class="browser-nav-btn" id="btn-browser-reload"><i class="fa-solid fa-rotate-right"></i></button>
+                <button class="browser-nav-btn" id="btn-browser-reload"><i
+                        class="fa-solid fa-rotate-right"></i></button>
                 <div class="url-bar">
-                    <input type="text" id="browser-url" class="url-input" placeholder="Enter URL or search..." value="about:blank">
-                    <button id="btn-browser-go" style="background: transparent; border: none; color: var(--accent); cursor: pointer; padding: 0 10px; font-size: 18px; font-weight: bold;">→</button>
+                    <input type="text" id="browser-url" class="url-input" placeholder="Enter URL or search..."
+                        value="about:blank">
+                    <button id="btn-browser-go"
+                        style="background: transparent; border: none; color: var(--accent); cursor: pointer; padding: 0 10px; font-size: 18px; font-weight: bold;">→</button>
                 </div>
             </div>
-            <iframe id="browser-frame" class="browser-content" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" src="about:blank"></iframe>
+            <div class="browser-content" id="browser-frame">
+                <div style="padding: 40px; text-align: center; color: #999;">
+                    <i class="fa-solid fa-globe" style="font-size: 64px; margin-bottom: 20px; color: #00d2d3;"></i>
+                    <p>Enter a URL or search term above</p>
+                </div>
+            </div>
+            <iframe id="browser-frame" class="browser-content"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms" src="about:blank"></iframe>
         </div>
     </div>
 
@@ -151,16 +162,16 @@
     <!-- Taskbar -->
     <div id="taskbar">
         <div id="start-btn"><i class="fa-brands fa-windows"></i></div>
+        <div id="task-view-btn" title="Task View"><i class="fa-solid fa-table-cells-large"></i></div>
 
         <div class="taskbar-icons">
             <div class="taskbar-icon" data-app="calculator"><i class="fa-solid fa-calculator"></i></div>
-            <div class="taskbar-icon" data-app="browser"><i class="fa-solid fa-compass"></i></div>
+            <div class="taskbar-icon" data-app="browser"><i class="fa-solid fa-globe"></i></div>
             <div class="taskbar-icon" data-app="notepad"><i class="fa-solid fa-file-pen"></i></div>
         </div>
 
         <div class="taskbar-right">
             <div id="voice-toggle" title="Toggle Voice"><i class="fa-solid fa-microphone"></i></div>
-            <div id="task-view-btn" title="Task View"><i class="fa-solid fa-table-cells-large"></i></div>
             <div id="clock-taskbar">12:00 PM</div>
         </div>
     </div>
@@ -182,7 +193,7 @@
                 <i class="fa-solid fa-file-lines" style="color: #54a0ff;"></i> Notepad
             </div>
             <div class="start-app" data-app="browser">
-                <i class="fa-brands fa-chrome" style="color: #2e86de;"></i> Browser
+                <i class="fa-solid fa-globe" style="color: #2e86de;"></i> Browser
             </div>
             <div class="start-app" data-app="settings">
                 <i class="fa-solid fa-gear" style="color: #5f27cd;"></i> Settings
@@ -203,6 +214,26 @@
 
     <!-- Voice Toast Notification -->
     <div id="voice-toast">Listening...</div>
+
+    <!-- AI Assistant (New Feature) -->
+    <div id="ai-assistant-btn" title="Open AI Assistant">
+        <i class="fa-solid fa-robot"></i>
+    </div>
+    <div id="ai-assistant-panel" style="display: none;">
+        <div class="ai-header">
+            <span>AI Assistant</span>
+            <span class="ai-close">&times;</span>
+        </div>
+        <div class="ai-content">
+            <div id="ai-messages">
+                <div class="ai-msg ai">Hello! I'm your Gesture Assistant. Ask me anything.</div>
+            </div>
+            <div class="ai-input-area">
+                <input type="text" id="ai-input" placeholder="Type a message..." autocomplete="off">
+                <button id="ai-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"

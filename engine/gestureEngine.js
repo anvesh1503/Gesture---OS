@@ -287,18 +287,18 @@ function onResults(results) {
     const ctx = canvasElement.getContext("2d");
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
+    if (!firstHandDetected) {
+        firstHandDetected = true; // Renaming variable conceptually to "firstFrameProcessed" in logic
+        console.log("👁️ Computer Vision Model Active (First Frame)");
+        if (window.OS_FLAGS) {
+            window.OS_FLAGS.model = true;
+            if (window.checkOSReady) window.checkOSReady();
+        }
+    }
+
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const lm = results.multiHandLandmarks[0];
-
-        // ⚡ FIRST HAND DETECTION - Unlock OS
-        if (!firstHandDetected) {
-            firstHandDetected = true;
-            console.log("🖐️ Hand Detected (First Time)");
-            if (window.OS_FLAGS) {
-                window.OS_FLAGS.model = true;
-                if (window.checkOSReady) window.checkOSReady();
-            }
-        }
+        // Hand processing continues...
 
         // Draw standard landmarks (always)
         if (window.drawConnectors) {

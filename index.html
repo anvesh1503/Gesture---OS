@@ -246,6 +246,21 @@
     <!-- Main Application Module -->
     <script type="module" src="main.js?v=2.0.0"></script>
 
+    <!-- CRITICAL FALLBACK: Ensure Loader Hides if JS Fails -->
+    <script>
+        setTimeout(() => {
+            const loader = document.getElementById('loading-screen');
+            if (loader && !loader.classList.contains('hidden')) {
+                console.warn("🚨 GLOBAL FALLBACK: Hiding stuck loader via Inline Script");
+                loader.style.opacity = '0';
+                loader.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    if (loader.parentNode) loader.parentNode.removeChild(loader);
+                }, 500);
+            }
+        }, 3000); // 3 Seconds Max Wait
+    </script>
 </body>
 
 </html>

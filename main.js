@@ -1,6 +1,6 @@
 /* =========================================================
-   MAIN ENTRY POINT
-   Orchestrates Gesture OS initialization.
+   MAIN ENTRY POINT (CRITICAL FIX)
+   Guarantees UI Load regardless of Engine Failures.
    ========================================================= */
 
 import { initWindowManager } from "./engine/windowManager.js";
@@ -17,13 +17,26 @@ import { initAssistant } from "./engine/aiAssistant.js";
 
 console.log("🚀 Main.js Loaded");
 
+// -- CRITICAL: FORCE UI VISIBILITY --
+function forceUnlockUI() {
+    console.log("� FORCE UNLOCK: Hiding Loading Screen...");
+    const loader = document.getElementById('loading-screen');
+    if (loader) {
+        loader.style.opacity = "0";
+        loader.style.pointerEvents = "none"; // Stop blocking immediately
+        setTimeout(() => {
+            loader.style.display = "none";
+            if (loader.parentNode) loader.parentNode.removeChild(loader);
+        }, 500); // Wait for fade out
+    }
+}
+
+// -- MAIN INIT SEQUENCE --
 document.addEventListener('DOMContentLoaded', () => {
     console.log("🚀 DOM Content Loaded");
 
-    // 1. Boot Animation
+    // 1. Run Visuals Immediately
     runBootSequence();
-
-    // 2. Initialize Engines
     initTheme();
     initWindowManager();
     initSnap();
@@ -34,56 +47,22 @@ document.addEventListener('DOMContentLoaded', () => {
     initCursor();
     initAssistant();
 
+    // 2. Start Heavy Engines (Async/Non-Blocking)
+    // Wrap in timeout to let UI frame render first
+    setTimeout(() => {
+        console.log("⚡ Starting Gesture & Voice Engines...");
+        try { initGestures(); } catch (e) { console.error("❌ Gesture Init Error (Non-Fatal):", e); }
+        try { initVoice(); } catch (e) { console.error("❌ Voice Init Error (Non-Fatal):", e); }
+    }, 100);
 
-    // 3. Start Core Engines IMMEDIATELY (No artificial delays)
-    window.addEventListener("load", () => {
-        console.log("🚀 Window Loaded - Starting Core AI Engines...");
-
-        // Define Global Hide Loader Function
-        window.hideLoadingScreen = () => {
-            const loader = document.getElementById('loading-screen');
-            if (loader && !loader.classList.contains('hidden')) {
-                console.log("🔓 Unlocking OS (Loading Screen Hidden)");
-                loader.style.opacity = "0"; // Ensure fade out
-                loader.classList.add('hidden');
-                setTimeout(() => {
-                    loader.style.display = "none";
-                    if (loader.parentNode) loader.parentNode.removeChild(loader);
-                }, 600);
-            }
-        };
-
-        // State Management for Fast Boot
-        window.OS_FLAGS = { camera: false, model: false, ui: false };
-
-        window.checkOSReady = () => {
-            // Note: We flag 'model' as true when first frame is processed OR if library fails (fallback)
-            if (window.OS_FLAGS.camera && window.OS_FLAGS.model && window.OS_FLAGS.ui) {
-                console.log("🚀 OS READY - Standard Unlock");
-                window.hideLoadingScreen();
-            }
-        };
-
-        // Fail-Safe: Force unlock after 5 seconds no matter what
-        setTimeout(() => {
-            console.warn("⏰ Fail-Safe: Force unlocking OS after timeout");
-            window.hideLoadingScreen();
-        }, 5000);
-
-        // Immediate Start
-        requestAnimationFrame(() => {
-            try { initGestures(); } catch (e) {
-                console.error("Gesture Init Failed", e);
-                window.OS_FLAGS.camera = true; // Fallback to unlock
-                window.OS_FLAGS.model = true;
-                window.checkOSReady();
-            }
-            try { initVoice(); } catch (e) { console.error("Voice Init Failed", e); }
-
-            // Allow UI to signal readiness
-            window.OS_FLAGS.ui = true;
-            window.checkOSReady();
-        });
-    });
-
+    // 3. FAIL-SAFE TIMER (The Ultimate Guarantee)
+    // Will unlock the screen after 2.0s NO MATTER WHAT happens above.
+    // This fixes the "Stuck Loading" bug.
+    setTimeout(() => {
+        console.log("⏰ Timer Expired: Unlocking UI");
+        forceUnlockUI();
+    }, 2000);
 });
+
+// Remove old blocking logic if any remains globally
+window.checkOSReady = () => { /* No-op to prevent errors in other files */ };

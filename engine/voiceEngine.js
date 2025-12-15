@@ -303,16 +303,7 @@ function stopRecognition() {
    ======================================== */
 function handlePhrase(rawText) {
     const cmd = rawText.toLowerCase().trim();
-<<<<<<< HEAD
-
     if (handleCalculatorCommand(cmd)) return;
-
-    if (cmd.includes('open calculator') || cmd === 'calculator') openApp('calculator');
-    if (cmd.includes('open notepad') || cmd === 'notepad') openApp('notepad');
-    if (cmd.includes('open browser') || cmd === 'browser') openApp('browser');
-    if (cmd.includes('open settings') || cmd === 'settings') openApp('settings');
-=======
-    console.log(`🗣️ Process Command: "${cmd}"`);
 
     // 1. ASSISTANT INTERACTIVE MODE (Priority)
     if (assistantListeningMode) {
@@ -339,11 +330,10 @@ function handlePhrase(rawText) {
     }
 
     // 3. SYSTEM COMMANDS (Fallback)
-    if (cmd.includes('open calculator') || cmd.includes('calculator')) openApp('calculator');
-    if (cmd.includes('open notepad') || cmd.includes('notepad')) openApp('notepad');
-    if (cmd.includes('open browser') || cmd.includes('browser')) openApp('browser');
-    if (cmd.includes('open settings')) openApp('settings');
->>>>>>> 4d1606c (feat: Add AI Assistant with Voice Control, Chat, and Real AI integration; Refine UI and Gestures)
+    if (cmd.includes('open calculator') || cmd === 'calculator') openApp('calculator');
+    if (cmd.includes('open notepad') || cmd === 'notepad') openApp('notepad');
+    if (cmd.includes('open browser') || cmd === 'browser') openApp('browser');
+    if (cmd.includes('open settings') || cmd === 'settings') openApp('settings');
 
     if (cmd.includes('close calculator')) closeWin('win-calculator');
     if (cmd.includes('close notepad')) closeWin('win-notepad');

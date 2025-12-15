@@ -50,14 +50,16 @@ export function setCursorState(state) {
     if (!cursorEl) return;
 
     // Reset classes
-    cursorEl.classList.remove("active", "fist", "hover");
+    cursorEl.classList.remove("active", "fist", "point", "swipe");
 
     if (state === "pinch") {
         cursorEl.classList.add("active");
     } else if (state === "fist") {
         cursorEl.classList.add("fist");
-    } else if (state === "hover") {
-        cursorEl.classList.add("hover");
+    } else if (state === "point") {
+        cursorEl.classList.add("point");
+    } else if (state === "swipe") {
+        cursorEl.classList.add("swipe");
     }
 }
 

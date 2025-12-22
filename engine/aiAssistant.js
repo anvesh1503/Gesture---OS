@@ -6,8 +6,12 @@ import { openApp, closeWin, hideAllWins } from './windowManager.js';
    ========================================================= */
 
 // 🔒 SECURITY: Replace this with your valid API Key
-const API_KEY = "YOUR_API_KEY_HERE";
-const API_URL = "https://api.openai.com/v1/chat/completions"; // Standard OpenAI Endpoint
+const API_KEY = "AIzaSyAaPg-FVCigh4AbuGmXCupXNKI1R7OmflQ";
+// Detect if it's a Gemini Key (Google API keys start with AIza)
+const IS_GEMINI = API_KEY.startsWith("AIza");
+const API_URL = IS_GEMINI
+    ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`
+    : "https://api.openai.com/v1/chat/completions";
 
 const SYSTEM_PROMPT = `
 You are the built-in AI assistant of Gesture OS.
@@ -112,8 +116,8 @@ async function handleLogic(text) {
     }
 
     // 3. Fallback to Real AI for Questions
-    if (API_KEY === "YOUR_API_KEY_HERE") {
-        addMessage("⚠️ API Key missing. Please configure 'engine/aiAssistant.js'.", 'ai');
+    if (API_KEY === "" || API_KEY.includes("YOUR_API_KEY")) {
+        addMessage("⚠️ API Key missing or invalid. Please configure 'engine/aiAssistant.js'.", 'ai');
         return;
     }
 
@@ -125,8 +129,10 @@ async function handleLogic(text) {
         addMessage(response, 'ai');
     } catch (e) {
         removeTypingIndicator();
-        console.error("AI API Error:", e);
-        addMessage("I'm having trouble connecting right now. Please try again.", 'ai');
+        console.error("AI Assistant Error Details:", e);
+        // Show a more descriptive error if it's an API issue
+        const errorMsg = e.message.includes("API Error") ? `Error: ${e.message}` : "I'm having trouble connecting right now. Please try again.";
+        addMessage(errorMsg, 'ai');
     }
 }
 
@@ -148,13 +154,13 @@ function executeLocalCommand(rawText) {
 
 /* ---- AI API Interaction ---- */
 async function fetchAIResponse(userQuery) {
-    const headers = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_KEY}`
-    };
+    const headers = { "Content-Type": "application/json" };
+    if (!IS_GEMINI) headers["Authorization"] = `Bearer ${API_KEY}`;
 
-    const payload = {
-        model: "gpt-3.5-turbo", // Or any compatible model
+    const payload = IS_GEMINI ? {
+        contents: [{ parts: [{ text: SYSTEM_PROMPT + "\n\nUser: " + userQuery }] }]
+    } : {
+        model: "gpt-3.5-turbo",
         messages: [
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: userQuery }
@@ -163,21 +169,37 @@ async function fetchAIResponse(userQuery) {
         max_tokens: 150
     };
 
+    console.log(`AI Request (${IS_GEMINI ? 'Gemini' : 'OpenAI'}):`, { url: API_URL, payload });
+
     const res = await fetch(API_URL, {
         method: "POST",
         headers: headers,
         body: JSON.stringify(payload)
     });
 
+    console.log("AI Response Status:", res.status);
+
     if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("AI API Error Body:", errorData);
         if (res.status === 429) throw new Error("Rate Limit Exceeded");
-        throw new Error(`API Error: ${res.status}`);
+        if (res.status === 401 || res.status === 403) throw new Error("Invalid API Key");
+        throw new Error(`API Error: ${res.status} - ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const data = await res.json();
-    if (data.choices && data.choices.length > 0) {
-        return data.choices[0].message.content.trim();
+    console.log("AI Response Data:", data);
+
+    if (IS_GEMINI) {
+        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+            return data.candidates[0].content.parts[0].text.trim();
+        }
+    } else {
+        if (data.choices && data.choices.length > 0) {
+            return data.choices[0].message.content.trim();
+        }
     }
+
     return "I couldn't generate a response.";
 }
 
